@@ -150,8 +150,10 @@ public class TerrainManager : MonoBehaviour
     public void ModifyTerrain(Vector3 worldPos, float strength, float radius)
     {
         int buildRadius = Mathf.CeilToInt(radius);
-        HashSet<Vector3Int> affectedChunks = new HashSet<Vector3Int>();
+        // Use a HashSet to keep track of which chunks have been modified.
+        HashSet<Vector3Int> chunksToRegenerate = new HashSet<Vector3Int>();
 
+        // Iterate through all points within the modification radius.
         for (int x = -buildRadius; x <= buildRadius; x++)
         {
             for (int y = -buildRadius; y <= buildRadius; y++)
@@ -159,35 +161,37 @@ public class TerrainManager : MonoBehaviour
                 for (int z = -buildRadius; z <= buildRadius; z++)
                 {
                     Vector3Int offset = new Vector3Int(x, y, z);
-                    float distance = offset.magnitude;
-                    if (distance > radius) continue;
-
-                    float falloff = 1 - (distance / radius);
-                    float modifiedStrength = strength * falloff;
+                    if (offset.magnitude > radius) continue;
 
                     Vector3Int modifiedPos = Vector3Int.FloorToInt(worldPos) + offset;
 
-                    for (int dx = -1; dx <= 0; dx++)
+                    float falloff = 1 - (offset.magnitude / radius);
+                    float modifiedStrength = strength * falloff;
+
+                    // A single density point can be part of the data for up to 8 chunks.
+                    // We need to identify all of them to apply the modification.
+                    Vector3Int anchorChunkPos = GetChunkCoordinatesFromPosition(modifiedPos);
+
+                    for (int i = 0; i < 8; i++)
                     {
-                        for (int dy = -1; dy <= 0; dy++)
+                        // Check the anchor chunk and its 7 neighbors in the negative directions.
+                        Vector3Int chunkOffset = new Vector3Int(-(i & 1), -((i & 2) >> 1), -((i & 4) >> 2));
+                        Vector3Int chunkToModifyPos = anchorChunkPos + chunkOffset;
+
+                        if (activeChunks.TryGetValue(chunkToModifyPos, out Chunk chunk))
                         {
-                            for (int dz = -1; dz <= 0; dz++)
-                            {
-                                Vector3Int checkPos = modifiedPos + new Vector3Int(dx, dy, dz);
-                                Vector3Int chunkPos = GetChunkCoordinatesFromPosition(checkPos);
-                                if (activeChunks.TryGetValue(chunkPos, out Chunk chunk))
-                                {
-                                    chunk.ModifyDensity(modifiedPos, modifiedStrength);
-                                    affectedChunks.Add(chunkPos);
-                                }
-                            }
+                            // ModifyDensity has internal checks, so it will only apply the change
+                            // if the point is within this chunk's density map.
+                            chunk.ModifyDensity(modifiedPos, modifiedStrength);
+                            chunksToRegenerate.Add(chunkToModifyPos);
                         }
                     }
                 }
             }
         }
 
-        foreach (Vector3Int chunkPos in affectedChunks)
+        // After all density modifications are done, regenerate the affected chunks.
+        foreach (Vector3Int chunkPos in chunksToRegenerate)
         {
             if (activeChunks.TryGetValue(chunkPos, out Chunk chunk))
             {

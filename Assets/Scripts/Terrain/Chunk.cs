@@ -23,6 +23,8 @@ public class Chunk : MonoBehaviour
 
     public void Initialize(Vector3Int pos, Material mat)
     {
+        WaitForJob();
+
         chunkPosition = pos;
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
@@ -44,10 +46,7 @@ public class Chunk : MonoBehaviour
 
     public void GenerateTerrain()
     {
-        if (isJobScheduled)
-        {
-            return;
-        }
+        WaitForJob();
 
         vertices = new NativeList<float3>(Allocator.Persistent);
         triangles = new NativeList<int>(Allocator.Persistent);
