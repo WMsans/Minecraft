@@ -18,18 +18,14 @@ public struct MarchingCubesJob : IJob
     // Output mesh data
     [WriteOnly] public NativeList<float3> vertices;
     [WriteOnly] public NativeList<int> triangles;
-    
+
     // Chunk parameters
     public int chunkSize;
     public int lod;
 
-    // LOD of 6 neighbors (X+, X-, Y+, Y-, Z+, Z-) for seam stitching
-    [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<int> neighborLODs;
-
-
     public void Execute()
     {
-        int step = 1 << 0; // The step within a single chunk's data is always 1
+        int step = 1 << lod; // lod 0 -> 1, lod 1 -> 2, etc.
         int numVerts = 0;
 
         for (int x = 0; x < chunkSize; x += step)
@@ -38,16 +34,10 @@ public struct MarchingCubesJob : IJob
             {
                 for (int z = 0; z < chunkSize; z += step)
                 {
-                    // Seam stitching check
-                    if (IsOnBoundaryAndShouldBeSkipped(x, y, z))
-                    {
-                        continue;
-                    }
-
                     var cubeDensities = new NativeArray<float>(8, Allocator.Temp);
                     for (int i = 0; i < 8; i++)
                     {
-                        int3 cornerOffset = cornerOffsets[i];
+                        int3 cornerOffset = cornerOffsets[i]; // Use the NativeArray passed into the job
                         int3 corner = new int3(x, y, z) + cornerOffset * step;
                         cubeDensities[i] = density[CornerToIndex(corner)];
                     }
@@ -66,10 +56,12 @@ public struct MarchingCubesJob : IJob
 
                     for (int i = 0; triangulationTable[triangulationTableIndex + i] != -1; i += 3)
                     {
+                        // Get the three vertices for the triangle by looking up the edges in the triangulation table
                         int edgeIndex1 = triangulationTable[triangulationTableIndex + i];
                         int edgeIndex2 = triangulationTable[triangulationTableIndex + i + 1];
                         int edgeIndex3 = triangulationTable[triangulationTableIndex + i + 2];
 
+                        // Get the corner indices for each edge
                         int a0 = cornerIndexAFromEdge[edgeIndex1];
                         int b0 = cornerIndexBFromEdge[edgeIndex1];
 
@@ -79,10 +71,12 @@ public struct MarchingCubesJob : IJob
                         int a2 = cornerIndexAFromEdge[edgeIndex3];
                         int b2 = cornerIndexBFromEdge[edgeIndex3];
 
+                        // Interpolate vertex positions
                         float3 vertA = InterpolateVertex(cubeDensities[a0], cubeDensities[b0], new float3(x, y, z) + cornerOffsets[a0] * step, new float3(x, y, z) + cornerOffsets[b0] * step);
                         float3 vertB = InterpolateVertex(cubeDensities[a1], cubeDensities[b1], new float3(x, y, z) + cornerOffsets[a1] * step, new float3(x, y, z) + cornerOffsets[b1] * step);
                         float3 vertC = InterpolateVertex(cubeDensities[a2], cubeDensities[b2], new float3(x, y, z) + cornerOffsets[a2] * step, new float3(x, y, z) + cornerOffsets[b2] * step);
 
+                        // Add vertices and triangle indices
                         vertices.Add(vertA);
                         vertices.Add(vertB);
                         vertices.Add(vertC);
@@ -95,20 +89,6 @@ public struct MarchingCubesJob : IJob
         }
     }
 
-    private bool IsOnBoundaryAndShouldBeSkipped(int x, int y, int z)
-    {
-        // Skip generating mesh for internal faces that border a higher-LOD chunk.
-        // This makes this chunk's mesh 'simpler' to match its neighbor.
-        if (x == chunkSize -1 && neighborLODs[0] > lod) return true;
-        if (x == 0 && neighborLODs[1] > lod) return true;
-        if (y == chunkSize -1 && neighborLODs[2] > lod) return true;
-        if (y == 0 && neighborLODs[3] > lod) return true;
-        if (z == chunkSize -1 && neighborLODs[4] > lod) return true;
-        if (z == 0 && neighborLODs[5] > lod) return true;
-
-        return false;
-    }
-
     private int CornerToIndex(int3 pos)
     {
         return pos.x + (chunkSize + 1) * (pos.y + (chunkSize + 1) * pos.z);
@@ -116,11 +96,11 @@ public struct MarchingCubesJob : IJob
 
     private float3 InterpolateVertex(float d1, float d2, float3 p1, float3 p2)
     {
-        float t = 0.5f;
         if (math.abs(d1 - d2) > 0.00001f)
         {
-            t = (0 - d1) / (d2 - d1);
+            float t = (0 - d1) / (d2 - d1);
+            return p1 + t * (p2 - p1);
         }
-        return p1 + t * (p2 - p1);
+        return p1;
     }
 }

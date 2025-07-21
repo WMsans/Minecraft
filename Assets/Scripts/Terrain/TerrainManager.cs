@@ -13,11 +13,10 @@ public class TerrainManager : MonoBehaviour
     public Transform player;
     public Camera mainCamera;
     public const int chunkSize = 16;
-    public const int renderDistance = 20; // In chunks
+    public const int renderDistance = 20;
 
     private Dictionary<Vector3Int, Chunk> activeChunks = new Dictionary<Vector3Int, Chunk>();
     private Queue<Chunk> chunkPool = new Queue<Chunk>();
-    private HashSet<Vector3Int> processedChunkPositions = new HashSet<Vector3Int>();
 
     public NativeArray<int> triangulationTable;
     public NativeArray<int3> cornerOffsets;
@@ -40,14 +39,14 @@ public class TerrainManager : MonoBehaviour
     void OnDestroy()
     {
         DisposeMarchingCubesTables();
-        foreach (var chunk in activeChunks.Values)
+        foreach(var chunk in activeChunks.Values)
         {
             if (chunk != null && chunk.gameObject != null)
             {
                 Destroy(chunk.gameObject);
             }
         }
-        foreach (var chunk in chunkPool)
+        foreach(var chunk in chunkPool)
         {
             if (chunk != null && chunk.gameObject != null)
             {
@@ -65,8 +64,24 @@ public class TerrainManager : MonoBehaviour
     {
         Plane[] frustumPlanes = GeometryUtility.CalculateFrustumPlanes(mainCamera);
         Vector3Int playerChunkPos = GetChunkCoordinatesFromPosition(player.position);
-        processedChunkPositions.Clear();
-        List<Vector3Int> chunksToDeactivate = new List<Vector3Int>(activeChunks.Keys);
+
+        List<Vector3Int> chunksToDeactivate = new List<Vector3Int>();
+        foreach (var chunkPair in activeChunks)
+        {
+            float distance = Vector3.Distance(playerChunkPos, chunkPair.Key);
+            if (distance > renderDistance)
+            {
+                chunksToDeactivate.Add(chunkPair.Key);
+            }
+        }
+
+        foreach (var chunkPos in chunksToDeactivate)
+        {
+            Chunk chunkToDeactivate = activeChunks[chunkPos];
+            chunkToDeactivate.gameObject.SetActive(false);
+            chunkPool.Enqueue(chunkToDeactivate);
+            activeChunks.Remove(chunkPos);
+        }
 
         for (int x = -renderDistance; x <= renderDistance; x++)
         {
@@ -74,125 +89,71 @@ public class TerrainManager : MonoBehaviour
             {
                 for (int z = -renderDistance; z <= renderDistance; z++)
                 {
-                    Vector3Int chunkCoord = playerChunkPos + new Vector3Int(x, y, z);
-                    
-                    if (processedChunkPositions.Contains(chunkCoord))
-                    {
-                        continue;
-                    }
+                    Vector3Int chunkPos = new Vector3Int(playerChunkPos.x + x, playerChunkPos.y + y, playerChunkPos.z + z);
+                    float distance = Vector3.Distance(playerChunkPos, chunkPos);
 
-                    float distance = Vector3.Distance(playerChunkPos, chunkCoord);
-                    if (distance > renderDistance)
+                    if (distance <= renderDistance)
                     {
-                        continue;
-                    }
-
-                    int lod = GetLODFromDistance(distance);
-                    int lodScale = 1 << lod;
-
-                    Vector3Int snappedChunkPos = new Vector3Int(
-                        Mathf.FloorToInt((float)chunkCoord.x / lodScale) * lodScale,
-                        Mathf.FloorToInt((float)chunkCoord.y / lodScale) * lodScale,
-                        Mathf.FloorToInt((float)chunkCoord.z / lodScale) * lodScale
-                    );
-                    
-                    chunksToDeactivate.Remove(snappedChunkPos);
-                    
-                    for (int sx = 0; sx < lodScale; sx++)
-                    {
-                        for (int sy = 0; sy < lodScale; sy++)
+                        var bounds = new Bounds(chunkPos * chunkSize + Vector3.one * chunkSize / 2f, Vector3.one * chunkSize);
+                        if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds))
                         {
-                            for (int sz = 0; sz < lodScale; sz++)
+                            int lod = GetLODFromDistance(distance);
+
+                            if (!activeChunks.ContainsKey(chunkPos))
                             {
-                                processedChunkPositions.Add(snappedChunkPos + new Vector3Int(sx, sy, sz));
+                                GetOrCreateChunk(chunkPos, lod);
+                            }
+                            else
+                            {
+                                Chunk chunk = activeChunks[chunkPos];
+                                if (chunk.lod != lod)
+                                {
+                                    chunk.lod = lod;
+                                    chunk.GenerateTerrain();
+                                }
+                                else if (!chunk.gameObject.activeSelf)
+                                {
+                                    chunk.gameObject.SetActive(true);
+                                }
                             }
                         }
                     }
-
-                    var bounds = new Bounds((snappedChunkPos * chunkSize) + (Vector3.one * (chunkSize * lodScale) / 2f), Vector3.one * (chunkSize * lodScale));
-                    if (!GeometryUtility.TestPlanesAABB(frustumPlanes, bounds))
-                    {
-                        continue;
-                    }
-
-                    if (activeChunks.TryGetValue(snappedChunkPos, out Chunk chunk))
-                    {
-                        if (chunk.lod != lod)
-                        {
-                            RecycleChunk(snappedChunkPos);
-                            GetOrCreateChunk(snappedChunkPos, lod);
-                        }
-                        else if (!chunk.gameObject.activeSelf)
-                        {
-                            chunk.gameObject.SetActive(true);
-                        }
-                    }
-                    else
-                    {
-                        GetOrCreateChunk(snappedChunkPos, lod);
-                    }
                 }
             }
-        }
-
-        foreach (var chunkPos in chunksToDeactivate)
-        {
-            RecycleChunk(chunkPos);
-        }
-    }
-    
-    void RecycleChunk(Vector3Int chunkPos)
-    {
-        if (activeChunks.TryGetValue(chunkPos, out Chunk chunkToDeactivate))
-        {
-            chunkToDeactivate.gameObject.SetActive(false);
-            chunkPool.Enqueue(chunkToDeactivate);
-            activeChunks.Remove(chunkPos);
         }
     }
 
     void GetOrCreateChunk(Vector3Int chunkPos, int lod)
     {
-        // Before creating a new chunk, remove any smaller chunks that would be overlapped by it.
-        int lodScale = 1 << lod;
-        for (int x = 0; x < lodScale; x++) {
-            for (int y = 0; y < lodScale; y++) {
-                for (int z = 0; z < lodScale; z++) {
-                    Vector3Int smallerChunkPos = chunkPos + new Vector3Int(x, y, z);
-                    if (smallerChunkPos != chunkPos && activeChunks.ContainsKey(smallerChunkPos)) {
-                         RecycleChunk(smallerChunkPos);
-                    }
-                }
-            }
-        }
-    
         Chunk newChunk;
         if (chunkPool.Count > 0)
         {
             newChunk = chunkPool.Dequeue();
-            newChunk.gameObject.name = $"Chunk {chunkPos.x}, {chunkPos.y}, {chunkPos.z}";
-            newChunk.transform.position = (Vector3)chunkPos * chunkSize;
+            newChunk.gameObject.transform.position = chunkPos * chunkSize;
             newChunk.gameObject.SetActive(true);
+            newChunk.Initialize(chunkPos, terrainMaterial);
         }
         else
         {
             GameObject chunkObject = new GameObject($"Chunk {chunkPos.x}, {chunkPos.y}, {chunkPos.z}");
-            chunkObject.transform.position = (Vector3)chunkPos * chunkSize;
+            chunkObject.transform.position = chunkPos * chunkSize;
             chunkObject.transform.parent = this.transform;
             newChunk = chunkObject.AddComponent<Chunk>();
+            newChunk.Initialize(chunkPos, terrainMaterial);
         }
-        
-        newChunk.Initialize(chunkPos, terrainMaterial, lod);
+
         activeChunks.Add(chunkPos, newChunk);
+        newChunk.lod = lod;
         newChunk.GenerateTerrain();
     }
-
 
     public void ModifyTerrain(Vector3 worldPos, float strength, float radius)
     {
         int buildRadius = Mathf.CeilToInt(radius);
+        // Use a HashSet to keep track of which chunks have been modified.
         HashSet<Vector3Int> chunksToRegenerate = new HashSet<Vector3Int>();
 
+        // Iterate through all points within the modification radius.
         for (int x = -buildRadius; x <= buildRadius; x++)
         {
             for (int y = -buildRadius; y <= buildRadius; y++)
@@ -207,15 +168,20 @@ public class TerrainManager : MonoBehaviour
                     float falloff = 1 - (offset.magnitude / radius);
                     float modifiedStrength = strength * falloff;
 
+                    // A single density point can be part of the data for up to 8 chunks.
+                    // We need to identify all of them to apply the modification.
                     Vector3Int anchorChunkPos = GetChunkCoordinatesFromPosition(modifiedPos);
 
                     for (int i = 0; i < 8; i++)
                     {
+                        // Check the anchor chunk and its 7 neighbors in the negative directions.
                         Vector3Int chunkOffset = new Vector3Int(-(i & 1), -((i & 2) >> 1), -((i & 4) >> 2));
                         Vector3Int chunkToModifyPos = anchorChunkPos + chunkOffset;
 
                         if (activeChunks.TryGetValue(chunkToModifyPos, out Chunk chunk))
                         {
+                            // ModifyDensity has internal checks, so it will only apply the change
+                            // if the point is within this chunk's density map.
                             chunk.ModifyDensity(modifiedPos, modifiedStrength);
                             chunksToRegenerate.Add(chunkToModifyPos);
                         }
@@ -224,6 +190,7 @@ public class TerrainManager : MonoBehaviour
             }
         }
 
+        // After all density modifications are done, regenerate the affected chunks.
         foreach (Vector3Int chunkPos in chunksToRegenerate)
         {
             if (activeChunks.TryGetValue(chunkPos, out Chunk chunk))
@@ -235,10 +202,10 @@ public class TerrainManager : MonoBehaviour
 
     int GetLODFromDistance(float distance)
     {
-        if (distance < renderDistance * 0.25f) return 0; // Highest resolution
+        if (distance < renderDistance * 0.25f) return 0;
         if (distance < renderDistance * 0.5f) return 1;
         if (distance < renderDistance * 0.75f) return 2;
-        return 3; // Lowest resolution
+        return 3;
     }
 
     public static Vector3Int GetChunkCoordinatesFromPosition(Vector3 position)
@@ -247,16 +214,6 @@ public class TerrainManager : MonoBehaviour
         int y = Mathf.FloorToInt(position.y / chunkSize);
         int z = Mathf.FloorToInt(position.z / chunkSize);
         return new Vector3Int(x, y, z);
-    }
-    
-    public int GetChunkLOD(Vector3Int chunkPos)
-    {
-        if (activeChunks.TryGetValue(chunkPos, out var chunk))
-        {
-            return chunk.lod;
-        }
-        // Return a default high LOD if neighbor doesn't exist to avoid seams with empty space
-        return 0; 
     }
 
     private void InitializeMarchingCubesTables()
