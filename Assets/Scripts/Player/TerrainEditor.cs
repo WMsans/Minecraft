@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class TerrainEditor : MonoBehaviour
 {
-    public TerrainManager terrainManager;
     public Camera playerCamera;
     public float modificationStrength = 5f;
     public float modificationRadius = 2f;
@@ -25,7 +24,7 @@ public class TerrainEditor : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
             float strength = dig ? -modificationStrength : modificationStrength;
-            terrainManager.ModifyTerrain(hit.point, strength, modificationRadius);
+            OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius);
         }
     }
 }
