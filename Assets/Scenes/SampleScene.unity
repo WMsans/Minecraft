@@ -622,7 +622,7 @@ MonoBehaviour:
   terrainMaterial: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   player: {fileID: 1726203990}
   mainCamera: {fileID: 330585545}
-  maxDepth: 7
+  maxDepth: 8
   nodeSize: 4096
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

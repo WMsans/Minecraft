@@ -43,6 +43,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }, (chunk) => {
             chunk.gameObject.SetActive(true);
         }, (chunk) => {
+            chunk.DisposeChunkResources(); // Dispose resources before returning to pool
             chunk.gameObject.SetActive(false);
         });
     }

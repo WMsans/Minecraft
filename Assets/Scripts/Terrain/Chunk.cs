@@ -97,7 +97,10 @@ public class Chunk : MonoBehaviour
             }
         }
         
-        // After modifying the density, we just need to regenerate the mesh, not the noise.
+        // Before creating new lists, dispose of the old ones
+        if (vertices.IsCreated) vertices.Dispose();
+        if (triangles.IsCreated) triangles.Dispose();
+
         vertices = new NativeList<float3>(Allocator.Persistent);
         triangles = new NativeList<int>(Allocator.Persistent);
         
@@ -124,6 +127,7 @@ public class Chunk : MonoBehaviour
         if (isJobScheduled && jobHandle.IsCompleted)
         {
             jobHandle.Complete();
+            isJobScheduled = false;
 
             if (vertices.Length > 3)
             {
@@ -151,26 +155,29 @@ public class Chunk : MonoBehaviour
             }
 
             DisposeNativeContainers();
-            isJobScheduled = false;
         }
     }
 
     private void DisposeNativeContainers()
     {
-        // densityMap is persistent for the life of the chunk, so don't dispose it here.
         if (vertices.IsCreated) vertices.Dispose();
         if (triangles.IsCreated) triangles.Dispose();
     }
 
-    void OnDestroy()
+    public void DisposeChunkResources()
     {
         if (isJobScheduled)
         {
             jobHandle.Complete();
-            DisposeNativeContainers();
+            isJobScheduled = false;
         }
-        
-        // Dispose densityMap here, when the chunk is actually destroyed.
+
         if (densityMap.IsCreated) densityMap.Dispose();
+        DisposeNativeContainers();
+    }
+
+    void OnDestroy()
+    {
+        DisposeChunkResources();
     }
 }
