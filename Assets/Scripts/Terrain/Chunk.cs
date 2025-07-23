@@ -10,13 +10,11 @@ public class Chunk : MonoBehaviour
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private MeshCollider meshCollider;
-    private JobHandle jobHandle;
-    private bool isJobScheduled = false;
 
     private NativeArray<float> densityMap;
     private NativeList<float3> vertices;
     private NativeList<int> triangles;
-    private OctreeNode node;
+    private BurstOctreeNode node;
 
     public void Initialize(Material mat)
     {
@@ -26,7 +24,7 @@ public class Chunk : MonoBehaviour
         meshRenderer.material = mat;
     }
 
-    public void GenerateTerrain(OctreeNode node)
+    public void GenerateTerrain(BurstOctreeNode node)
     {
         this.node = node;
         transform.position = node.bounds.min;
@@ -57,15 +55,15 @@ public class Chunk : MonoBehaviour
             triangles = triangles
         };
 
-        jobHandle = noiseJob.Schedule(densityMap.Length, 64);
-        jobHandle = marchingCubesJob.Schedule(jobHandle);
-        isJobScheduled = true;
+        // Run jobs and apply mesh immediately
+        noiseJob.Schedule(densityMap.Length, 64).Complete();
+        marchingCubesJob.Schedule().Complete();
+
+        ApplyMesh();
     }
-    
+
     public void ModifyDensity(Vector3 worldPos, float strength, float radius)
     {
-        if (isJobScheduled) return;
-
         int buildRadius = Mathf.CeilToInt(radius);
         for (int x = -buildRadius; x <= buildRadius; x++)
         {
@@ -117,45 +115,38 @@ public class Chunk : MonoBehaviour
             triangles = triangles
         };
 
-        jobHandle = marchingCubesJob.Schedule();
-        isJobScheduled = true;
+        marchingCubesJob.Schedule().Complete();
+        ApplyMesh();
     }
 
-
-    void LateUpdate()
+    private void ApplyMesh()
     {
-        if (isJobScheduled && jobHandle.IsCompleted)
+        if (vertices.Length > 3)
         {
-            jobHandle.Complete();
-            isJobScheduled = false;
-
-            if (vertices.Length > 3)
+            Mesh mesh = new Mesh
             {
-                Mesh mesh = new Mesh
-                {
-                    indexFormat = IndexFormat.UInt32
-                };
+                indexFormat = IndexFormat.UInt32
+            };
 
-                mesh.SetVertices(vertices.AsArray());
-                mesh.SetIndexBufferParams(triangles.Length, IndexFormat.UInt32);
-                mesh.SetIndexBufferData(triangles.AsArray(), 0, 0, triangles.Length);
-                SubMeshDescriptor subMesh = new SubMeshDescriptor(0, triangles.Length, MeshTopology.Triangles);
-                mesh.SetSubMesh(0, subMesh);
+            mesh.SetVertices(vertices.AsArray());
+            mesh.SetIndexBufferParams(triangles.Length, IndexFormat.UInt32);
+            mesh.SetIndexBufferData(triangles.AsArray(), 0, 0, triangles.Length);
+            SubMeshDescriptor subMesh = new SubMeshDescriptor(0, triangles.Length, MeshTopology.Triangles);
+            mesh.SetSubMesh(0, subMesh);
 
-                mesh.RecalculateBounds();
-                mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
 
-                meshFilter.mesh = mesh;
-                meshCollider.sharedMesh = mesh;
-            }
-            else
-            {
-                meshFilter.mesh = null;
-                meshCollider.sharedMesh = null;
-            }
-
-            DisposeNativeContainers();
+            meshFilter.mesh = mesh;
+            meshCollider.sharedMesh = mesh;
         }
+        else
+        {
+            meshFilter.mesh = null;
+            meshCollider.sharedMesh = null;
+        }
+
+        DisposeNativeContainers();
     }
 
     private void DisposeNativeContainers()
@@ -166,12 +157,6 @@ public class Chunk : MonoBehaviour
 
     public void DisposeChunkResources()
     {
-        if (isJobScheduled)
-        {
-            jobHandle.Complete();
-            isJobScheduled = false;
-        }
-
         if (densityMap.IsCreated) densityMap.Dispose();
         DisposeNativeContainers();
     }
