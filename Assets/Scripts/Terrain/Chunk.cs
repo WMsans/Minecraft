@@ -27,8 +27,10 @@ public class Chunk : MonoBehaviour
     public void GenerateTerrain(BurstOctreeNode node)
     {
         this.node = node;
-        transform.position = node.bounds.min;
-        transform.localScale = Vector3.one * node.bounds.size.x / 16;
+        // The chunk's GameObject will now sit at the world origin,
+        // as the mesh vertices are in world space.
+        transform.position = Vector3.zero;
+        transform.localScale = Vector3.one;
 
         densityMap = new NativeArray<float>((16 + 1) * (16 + 1) * (16 + 1), Allocator.Persistent);
         vertices = new NativeList<float3>(Allocator.Persistent);
@@ -52,7 +54,10 @@ public class Chunk : MonoBehaviour
             cornerIndexAFromEdge = OctreeTerrainManager.Instance.cornerIndexAFromEdge,
             cornerIndexBFromEdge = OctreeTerrainManager.Instance.cornerIndexBFromEdge,
             vertices = vertices,
-            triangles = triangles
+            triangles = triangles,
+            // Pass the node's bounds for world space conversion
+            nodeMin = node.bounds.min,
+            nodeSize = node.bounds.size.x
         };
 
         // Run jobs and apply mesh immediately
@@ -64,44 +69,22 @@ public class Chunk : MonoBehaviour
 
     public void ModifyDensity(Vector3 worldPos, float strength, float radius)
     {
-        int buildRadius = Mathf.CeilToInt(radius);
-        for (int x = -buildRadius; x <= buildRadius; x++)
+        var densityJob = new DensityModificationJob
         {
-            for (int y = -buildRadius; y <= buildRadius; y++)
-            {
-                for (int z = -buildRadius; z <= buildRadius; z++)
-                {
-                    Vector3Int offset = new Vector3Int(x, y, z);
-                    if (offset.magnitude > radius) continue;
-
-                    Vector3Int modifiedPos = Vector3Int.FloorToInt(worldPos) + offset;
-                    
-                    int densityX = (int)((modifiedPos.x - node.bounds.min.x) / node.bounds.size.x * 16);
-                    int densityY = (int)((modifiedPos.y - node.bounds.min.y) / node.bounds.size.x * 16);
-                    int densityZ = (int)((modifiedPos.z - node.bounds.min.z) / node.bounds.size.x * 16);
-
-                    if (densityX >= 0 && densityX <= 16 &&
-                        densityY >= 0 && densityY <= 16 &&
-                        densityZ >= 0 && densityZ <= 16)
-                    {
-                        int index = densityX + (16 + 1) * (densityY + (16 + 1) * densityZ);
-                        if (index >= 0 && index < densityMap.Length)
-                        {
-                            float falloff = 1 - (offset.magnitude / radius);
-                            densityMap[index] += strength * falloff;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Before creating new lists, dispose of the old ones
+            worldPos = worldPos,
+            strength = strength,
+            radius = radius,
+            nodeBounds = node.bounds,
+            densityMap = densityMap
+        };
+        densityJob.Schedule().Complete();
+    
         if (vertices.IsCreated) vertices.Dispose();
         if (triangles.IsCreated) triangles.Dispose();
 
         vertices = new NativeList<float3>(Allocator.Persistent);
         triangles = new NativeList<int>(Allocator.Persistent);
-        
+    
         var marchingCubesJob = new MarchingCubesJob
         {
             density = densityMap,
@@ -112,7 +95,10 @@ public class Chunk : MonoBehaviour
             cornerIndexAFromEdge = OctreeTerrainManager.Instance.cornerIndexAFromEdge,
             cornerIndexBFromEdge = OctreeTerrainManager.Instance.cornerIndexBFromEdge,
             vertices = vertices,
-            triangles = triangles
+            triangles = triangles,
+            // Pass the node's bounds for world space conversion
+            nodeMin = node.bounds.min,
+            nodeSize = node.bounds.size.x
         };
 
         marchingCubesJob.Schedule().Complete();
@@ -133,7 +119,8 @@ public class Chunk : MonoBehaviour
             mesh.SetIndexBufferData(triangles.AsArray(), 0, 0, triangles.Length);
             SubMeshDescriptor subMesh = new SubMeshDescriptor(0, triangles.Length, MeshTopology.Triangles);
             mesh.SetSubMesh(0, subMesh);
-
+            
+            // The bounds need to be recalculated in world space
             mesh.RecalculateBounds();
             mesh.RecalculateNormals();
 

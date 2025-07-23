@@ -22,11 +22,15 @@ public struct MarchingCubesJob : IJob
     // Chunk parameters
     public int chunkSize;
     public int lod;
+    // New parameters for world space conversion
+    [ReadOnly] public float3 nodeMin;
+    [ReadOnly] public float nodeSize;
 
     public void Execute()
     {
         int step = 1 << lod; // lod 0 -> 1, lod 1 -> 2, etc.
         int numVerts = 0;
+        float scale = nodeSize / chunkSize;
 
         for (int x = 0; x < chunkSize; x += step)
         {
@@ -37,7 +41,7 @@ public struct MarchingCubesJob : IJob
                     var cubeDensities = new NativeArray<float>(8, Allocator.Temp);
                     for (int i = 0; i < 8; i++)
                     {
-                        int3 cornerOffset = cornerOffsets[i]; // Use the NativeArray passed into the job
+                        int3 cornerOffset = cornerOffsets[i];
                         int3 corner = new int3(x, y, z) + cornerOffset * step;
                         cubeDensities[i] = density[CornerToIndex(corner)];
                     }
@@ -56,12 +60,10 @@ public struct MarchingCubesJob : IJob
 
                     for (int i = 0; triangulationTable[triangulationTableIndex + i] != -1; i += 3)
                     {
-                        // Get the three vertices for the triangle by looking up the edges in the triangulation table
                         int edgeIndex1 = triangulationTable[triangulationTableIndex + i];
                         int edgeIndex2 = triangulationTable[triangulationTableIndex + i + 1];
                         int edgeIndex3 = triangulationTable[triangulationTableIndex + i + 2];
 
-                        // Get the corner indices for each edge
                         int a0 = cornerIndexAFromEdge[edgeIndex1];
                         int b0 = cornerIndexBFromEdge[edgeIndex1];
 
@@ -71,15 +73,14 @@ public struct MarchingCubesJob : IJob
                         int a2 = cornerIndexAFromEdge[edgeIndex3];
                         int b2 = cornerIndexBFromEdge[edgeIndex3];
 
-                        // Interpolate vertex positions
-                        float3 vertA = InterpolateVertex(cubeDensities[a0], cubeDensities[b0], new float3(x, y, z) + cornerOffsets[a0] * step, new float3(x, y, z) + cornerOffsets[b0] * step);
-                        float3 vertB = InterpolateVertex(cubeDensities[a1], cubeDensities[b1], new float3(x, y, z) + cornerOffsets[a1] * step, new float3(x, y, z) + cornerOffsets[b1] * step);
-                        float3 vertC = InterpolateVertex(cubeDensities[a2], cubeDensities[b2], new float3(x, y, z) + cornerOffsets[a2] * step, new float3(x, y, z) + cornerOffsets[b2] * step);
+                        float3 vertA_local = InterpolateVertex(cubeDensities[a0], cubeDensities[b0], new float3(x, y, z) + cornerOffsets[a0] * step, new float3(x, y, z) + cornerOffsets[b0] * step);
+                        float3 vertB_local = InterpolateVertex(cubeDensities[a1], cubeDensities[b1], new float3(x, y, z) + cornerOffsets[a1] * step, new float3(x, y, z) + cornerOffsets[b1] * step);
+                        float3 vertC_local = InterpolateVertex(cubeDensities[a2], cubeDensities[b2], new float3(x, y, z) + cornerOffsets[a2] * step, new float3(x, y, z) + cornerOffsets[b2] * step);
 
-                        // Add vertices and triangle indices
-                        vertices.Add(vertA);
-                        vertices.Add(vertB);
-                        vertices.Add(vertC);
+                        // Convert local vertex positions to world space before adding them
+                        vertices.Add(vertA_local * scale + nodeMin);
+                        vertices.Add(vertB_local * scale + nodeMin);
+                        vertices.Add(vertC_local * scale + nodeMin);
                         triangles.Add(numVerts++);
                         triangles.Add(numVerts++);
                         triangles.Add(numVerts++);

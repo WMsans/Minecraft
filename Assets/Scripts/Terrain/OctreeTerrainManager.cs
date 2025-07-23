@@ -215,7 +215,20 @@ public class OctreeTerrainManager : MonoBehaviour
 
     public void ModifyTerrain(Vector3 worldPos, float strength, float radius)
     {
-        // To be implemented with a Burst job
+        Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
+
+        // Iterate over all nodes to find which ones to modify
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            var node = nodes[i];
+            if (node.isLeaf && node.bounds.Intersects(modificationBounds))
+            {
+                if (activeChunks.ContainsKey(i))
+                {
+                    activeChunks[i].ModifyDensity(worldPos, strength, radius);
+                }
+            }
+        }
     }
 
     void OnDrawGizmos()
