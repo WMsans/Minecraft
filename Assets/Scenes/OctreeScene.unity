@@ -620,7 +620,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ca8bc34462a4780818e43319f5c0f1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainMaterial: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: ae387f2b7998e67409bc73742ce93986, type: 2}
   player: {fileID: 1726203990}
   mainCamera: {fileID: 330585545}
   maxDepth: 5

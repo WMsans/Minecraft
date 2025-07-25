@@ -12,7 +12,7 @@ public class Chunk : MonoBehaviour
     private MeshCollider meshCollider;
 
     private NativeArray<float> densityMap;
-    private BurstOctreeNode node;
+    private OctreeNode node;
     private TerrainGenerator terrainGenerator;
     
     private NativeArray<byte> voxelTypes;
@@ -41,7 +41,7 @@ public class Chunk : MonoBehaviour
         this.terrainGenerator = terrainGenerator;
     }
 
-    public MeshData GenerateTerrain(BurstOctreeNode node)
+    public MeshData GenerateTerrain(OctreeNode node)
     {
         this.node = node;
 

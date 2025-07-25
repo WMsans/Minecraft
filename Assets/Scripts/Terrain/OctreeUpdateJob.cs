@@ -11,7 +11,7 @@ public struct OctreeUpdateJob : IJob
     [ReadOnly] public FrustumCulling.FrustumPlanes frustumPlanes;
     [ReadOnly] public int maxDepth;
 
-    [ReadOnly] public NativeList<BurstOctreeNode> nodes; // Changed to ReadOnly
+    [ReadOnly] public NativeList<OctreeNode> nodes; // Changed to ReadOnly
     public NativeList<int> toSubdivide;
     public NativeList<int> toMerge;
     public NativeList<int> toGenerate;

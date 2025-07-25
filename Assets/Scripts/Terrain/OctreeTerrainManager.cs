@@ -16,7 +16,7 @@ public class OctreeTerrainManager : MonoBehaviour
     public int maxDepth = 2;
     public float nodeSize = 64;
 
-    private NativeList<BurstOctreeNode> nodes;
+    private NativeList<OctreeNode> nodes;
     private Dictionary<int, Chunk> activeChunks;
     private Pool<Chunk> chunkPool;
 
@@ -30,7 +30,7 @@ public class OctreeTerrainManager : MonoBehaviour
     public NativeArray<int> cornerIndexAFromEdge;
     public NativeArray<int> cornerIndexBFromEdge;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
@@ -59,13 +59,13 @@ public class OctreeTerrainManager : MonoBehaviour
         });
     }
 
-    void Start()
+    private void Start()
     {
-        nodes = new NativeList<BurstOctreeNode>(Allocator.Persistent);
+        nodes = new NativeList<OctreeNode>(Allocator.Persistent);
         activeChunks = new Dictionary<int, Chunk>();
         // Initialize the new dictionary type.
         generationTasks = new Dictionary<int, (Task<Chunk.MeshData> task, Chunk chunk)>();
-        nodes.Add(new BurstOctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
+        nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
         terrainGenerator = new TerrainGenerator();
     }
@@ -78,7 +78,7 @@ public class OctreeTerrainManager : MonoBehaviour
         cornerIndexBFromEdge = new NativeArray<int>(MarchingCubesTables.cornerIndexBFromEdge, Allocator.Persistent);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (nodes.IsCreated) nodes.Dispose();
         if (triangulationTable.IsCreated) triangulationTable.Dispose();
@@ -87,7 +87,7 @@ public class OctreeTerrainManager : MonoBehaviour
         if (cornerIndexBFromEdge.IsCreated) cornerIndexBFromEdge.Dispose();
     }
 
-    void Update()
+    private void Update()
     {
         var frustumPlanes = FrustumCulling.GetFrustumPlanes(mainCamera);
 
@@ -175,7 +175,7 @@ public class OctreeTerrainManager : MonoBehaviour
                 ((i & 4) == 0 ? -offset : offset),
                 ((i & 2) == 0 ? -offset : offset)
             );
-            nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + centerOffset, new Vector3(childSize, childSize, childSize)), node.depth + 1));
+            nodes.Add(new OctreeNode(new Bounds(node.bounds.center + centerOffset, new Vector3(childSize, childSize, childSize)), node.depth + 1));
         }
     }
 
@@ -197,7 +197,7 @@ public class OctreeTerrainManager : MonoBehaviour
                 {
                     stack.Push(childNode.childrenIndex);
                 }
-                 DestroyChunk(currentIndex + i);
+                DestroyChunk(currentIndex + i);
             }
         }
 
@@ -219,10 +219,7 @@ public class OctreeTerrainManager : MonoBehaviour
             chunk.gameObject.SetActive(true);
             activeChunks[nodeIndex] = chunk;
 
-            var task = Task.Run(() =>
-            {
-                return chunk.GenerateTerrain(nodes[nodeIndex]);
-            });
+            var task = Task.Run(() => chunk.GenerateTerrain(nodes[nodeIndex]));
             generationTasks[nodeIndex] = (task, chunk);
         }
     }
@@ -259,7 +256,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }
     }
 
-    void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         if (nodes.IsCreated)
         {

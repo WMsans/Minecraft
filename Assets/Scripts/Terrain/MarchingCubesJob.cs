@@ -42,13 +42,13 @@ public struct MarchingCubesJob : IJob
                 for (int z = 0; z < chunkSize; z += step)
                 {
                     var cubeDensities = new NativeArray<float>(8, Allocator.Temp);
-                    var cubeVoxelTypes = new NativeArray<byte>(8, Allocator.Temp); // New
+                    var cubeVoxelTypes = new NativeArray<byte>(8, Allocator.Temp); 
                     for (int i = 0; i < 8; i++)
                     {
                         int3 cornerOffset = cornerOffsets[i];
                         int3 corner = new int3(x, y, z) + cornerOffset * step;
                         cubeDensities[i] = density[CornerToIndex(corner)];
-                        cubeVoxelTypes[i] = voxelTypes[CornerToIndex(corner)]; // New
+                        cubeVoxelTypes[i] = voxelTypes[CornerToIndex(corner)]; 
                     }
 
                     int cubeIndex = 0;
