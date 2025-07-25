@@ -7,8 +7,8 @@ using Unity.Mathematics;
 [BurstCompile]
 public unsafe struct TerrainLayer
 {
-    // The delegate now uses a pointer for the density map
-    public delegate void ApplyDelegate(ref TerrainLayer layer, float* density, int densityLength, int chunkSize, in float3 offset, float scale);
+    // The delegate now uses pointers for density and voxel type maps
+    public delegate void ApplyDelegate(ref TerrainLayer layer, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale);
 
     public FunctionPointer<ApplyDelegate> ApplyFunction;
 
@@ -17,9 +17,9 @@ public unsafe struct TerrainLayer
     public float noiseScale;
     public float noiseStrength;
 
-    // This method converts the NativeArray to a pointer before calling the function pointer
-    public void Apply(NativeArray<float> density, int chunkSize, in float3 offset, float scale)
+    // This method converts the NativeArrays to pointers before calling the function pointer
+    public void Apply(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, in float3 offset, float scale)
     {
-        ApplyFunction.Invoke(ref this, (float*)density.GetUnsafePtr(), density.Length, chunkSize, in offset, scale);
+        ApplyFunction.Invoke(ref this, (float*)density.GetUnsafePtr(), (byte*)voxelTypes.GetUnsafePtr(), density.Length, chunkSize, in offset, scale);
     }
 }

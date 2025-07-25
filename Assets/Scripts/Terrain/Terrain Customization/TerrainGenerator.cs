@@ -7,7 +7,7 @@ public class TerrainGenerator
 {
     public List<TerrainLayer> layers = new(){ PerlinNoiseLayer.Create() };
 
-    public void ApplyLayers(NativeArray<float> density, int chunkSize, float3 offset, float scale)
+    public void ApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, float3 offset, float scale)
     {
         var layersArray = new NativeArray<TerrainLayer>(layers.ToArray(), Allocator.TempJob);
 
@@ -15,6 +15,7 @@ public class TerrainGenerator
         {
             layers = layersArray,
             density = density,
+            voxelTypes = voxelTypes, 
             chunkSize = chunkSize,
             offset = offset,
             scale = scale

@@ -12,6 +12,8 @@ public struct DensityModificationJob : IJob
     [ReadOnly] public float radius;
     [ReadOnly] public Bounds nodeBounds;
     public NativeArray<float> densityMap;
+    public NativeArray<byte> voxelTypes; // New
+    [ReadOnly] public byte newVoxelType; // New
 
     public void Execute()
     {
@@ -41,6 +43,10 @@ public struct DensityModificationJob : IJob
                         {
                             float falloff = 1 - (math.length(offset) / radius);
                             densityMap[index] += strength * falloff;
+                            if(strength < 0)
+                            {
+                                voxelTypes[index] = newVoxelType;
+                            }
                         }
                     }
                 }

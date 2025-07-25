@@ -8,6 +8,7 @@ public struct ApplyLayersJob : IJob
 {
     public NativeArray<TerrainLayer> layers;
     public NativeArray<float> density;
+    public NativeArray<byte> voxelTypes; 
     public int chunkSize;
     public float3 offset;
     public float scale;
@@ -19,8 +20,8 @@ public struct ApplyLayersJob : IJob
             var layer = layers[i];
             if (layer.enabled)
             {
-                // Pass offset by "in" reference
-                layer.Apply(density, chunkSize, in offset, scale);
+                // Pass voxelTypes to the layer's Apply method
+                layer.Apply(density, voxelTypes, chunkSize, in offset, scale); 
             }
         }
     }

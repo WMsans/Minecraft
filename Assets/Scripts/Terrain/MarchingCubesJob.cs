@@ -22,9 +22,12 @@ public struct MarchingCubesJob : IJob
     // Chunk parameters
     public int chunkSize;
     public int lod;
-    // New parameters for world space conversion
+    // World space conversion
     [ReadOnly] public float3 nodeMin;
     [ReadOnly] public float nodeSize;
+    // Voxel types
+    [ReadOnly] public NativeArray<byte> voxelTypes; 
+    [WriteOnly] public NativeList<float> vertexTypes; 
 
     public void Execute()
     {
@@ -39,11 +42,13 @@ public struct MarchingCubesJob : IJob
                 for (int z = 0; z < chunkSize; z += step)
                 {
                     var cubeDensities = new NativeArray<float>(8, Allocator.Temp);
+                    var cubeVoxelTypes = new NativeArray<byte>(8, Allocator.Temp); // New
                     for (int i = 0; i < 8; i++)
                     {
                         int3 cornerOffset = cornerOffsets[i];
                         int3 corner = new int3(x, y, z) + cornerOffset * step;
                         cubeDensities[i] = density[CornerToIndex(corner)];
+                        cubeVoxelTypes[i] = voxelTypes[CornerToIndex(corner)]; // New
                     }
 
                     int cubeIndex = 0;
@@ -72,6 +77,10 @@ public struct MarchingCubesJob : IJob
 
                         int a2 = cornerIndexAFromEdge[edgeIndex3];
                         int b2 = cornerIndexBFromEdge[edgeIndex3];
+                        
+                        // Here we are simply taking the type of the first corner of the voxel.
+                        // You might want to implement a more sophisticated logic, e.g., dominant type.
+                        byte type = cubeVoxelTypes[0];
 
                         float3 vertA_local = InterpolateVertex(cubeDensities[a0], cubeDensities[b0], new float3(x, y, z) + cornerOffsets[a0] * step, new float3(x, y, z) + cornerOffsets[b0] * step);
                         float3 vertB_local = InterpolateVertex(cubeDensities[a1], cubeDensities[b1], new float3(x, y, z) + cornerOffsets[a1] * step, new float3(x, y, z) + cornerOffsets[b1] * step);
@@ -81,6 +90,12 @@ public struct MarchingCubesJob : IJob
                         vertices.Add(vertA_local * scale + nodeMin);
                         vertices.Add(vertB_local * scale + nodeMin);
                         vertices.Add(vertC_local * scale + nodeMin);
+                        
+                        // New: add the type for each vertex
+                        vertexTypes.Add(type);
+                        vertexTypes.Add(type);
+                        vertexTypes.Add(type);
+                        
                         triangles.Add(numVerts++);
                         triangles.Add(numVerts++);
                         triangles.Add(numVerts++);
