@@ -5,23 +5,31 @@ using Unity.Mathematics;
 
 public class TerrainGenerator
 {
-    public List<TerrainLayer> layers = new(){ PerlinNoiseLayer.Create() };
+    public List<TerrainLayer> layers = new() { PerlinNoiseLayer.Create() };
+    private NativeArray<TerrainLayer> layersArray;
 
-    public void ApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, float3 offset, float scale)
+    public void Initialize()
     {
-        var layersArray = new NativeArray<TerrainLayer>(layers.ToArray(), Allocator.TempJob);
+        layersArray = new NativeArray<TerrainLayer>(layers.ToArray(), Allocator.Persistent);
+    }
 
+    public void Dispose()
+    {
+        if (layersArray.IsCreated)
+            layersArray.Dispose();
+    }
+
+    public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, float3 offset, float scale, JobHandle dependency)
+    {
         var job = new ApplyLayersJob
         {
             layers = layersArray,
             density = density,
-            voxelTypes = voxelTypes, 
+            voxelTypes = voxelTypes,
             chunkSize = chunkSize,
             offset = offset,
             scale = scale
         };
-        job.Schedule().Complete();
-
-        layersArray.Dispose();
+        return job.Schedule(dependency);
     }
 }

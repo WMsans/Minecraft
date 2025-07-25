@@ -17,18 +17,17 @@ public class Chunk : MonoBehaviour
     
     private NativeArray<byte> voxelTypes;
 
-    // hold the generated mesh data
     public struct MeshData
     {
         public NativeList<float3> vertices;
         public NativeList<int> triangles;
-        public NativeList<float> vertexTypes; 
+        public NativeList<float> vertexTypes;
         public bool IsCreated => vertices.IsCreated && triangles.IsCreated && vertexTypes.IsCreated;
         public void Dispose()
         {
             if (vertices.IsCreated) vertices.Dispose();
             if (triangles.IsCreated) triangles.Dispose();
-            if (vertexTypes.IsCreated) vertexTypes.Dispose(); 
+            if (vertexTypes.IsCreated) vertexTypes.Dispose();
         }
     }
 
@@ -41,7 +40,7 @@ public class Chunk : MonoBehaviour
         this.terrainGenerator = terrainGenerator;
     }
 
-    public MeshData GenerateTerrain(OctreeNode node)
+    public JobHandle ScheduleTerrainGeneration(OctreeNode node, out MeshData meshData)
     {
         this.node = node;
 
@@ -54,17 +53,16 @@ public class Chunk : MonoBehaviour
             voxelTypes = new NativeArray<byte>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
         }
 
-        // Pass voxelTypes to ApplyLayers
-        terrainGenerator.ApplyLayers(densityMap, voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x);
+        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(densityMap, voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
-        var vertexTypesOut = new NativeList<float>(Allocator.Persistent);  
+        var vertexTypesOut = new NativeList<float>(Allocator.Persistent);
 
         var marchingCubesJob = new MarchingCubesJob
         {
             density = densityMap,
-            voxelTypes = this.voxelTypes,  
+            voxelTypes = this.voxelTypes,
             chunkSize = TerrainSettings.MIN_NODE_SIZE,
             lod = 0,
             triangulationTable = OctreeTerrainManager.Instance.triangulationTable,
@@ -73,15 +71,16 @@ public class Chunk : MonoBehaviour
             cornerIndexBFromEdge = OctreeTerrainManager.Instance.cornerIndexBFromEdge,
             vertices = vertices,
             triangles = triangles,
-            vertexTypes = vertexTypesOut,  
+            vertexTypes = vertexTypesOut,
             nodeMin = node.bounds.min,
             nodeSize = node.bounds.size.x
         };
 
-        marchingCubesJob.Schedule().Complete();
-
-        return new MeshData { vertices = vertices, triangles = triangles, vertexTypes = vertexTypesOut }; // Modified
+        var marchingCubesHandle = marchingCubesJob.Schedule(applyLayersHandle);
+        meshData = new MeshData { vertices = vertices, triangles = triangles, vertexTypes = vertexTypesOut };
+        return marchingCubesHandle;
     }
+
 
     public void ApplyGeneratedMesh(MeshData meshData)
     {
@@ -124,20 +123,20 @@ public class Chunk : MonoBehaviour
             radius = radius,
             nodeBounds = node.bounds,
             densityMap = densityMap,
-            voxelTypes = this.voxelTypes,  
+            voxelTypes = this.voxelTypes,
             newVoxelType = 1, // Example type, you can change this
         };
         densityJob.Schedule().Complete();
-    
+
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
         var vertexTypesOut = new NativeList<float>(Allocator.Persistent); //New
-    
+
         var marchingCubesJob = new MarchingCubesJob
         {
             density = densityMap,
-            voxelTypes = this.voxelTypes,  
-            chunkSize = TerrainSettings.MIN_NODE_SIZE, 
+            voxelTypes = this.voxelTypes,
+            chunkSize = TerrainSettings.MIN_NODE_SIZE,
             lod = 0,
             triangulationTable = OctreeTerrainManager.Instance.triangulationTable,
             cornerOffsets = OctreeTerrainManager.Instance.cornerOffsets,
@@ -145,7 +144,7 @@ public class Chunk : MonoBehaviour
             cornerIndexBFromEdge = OctreeTerrainManager.Instance.cornerIndexBFromEdge,
             vertices = vertices,
             triangles = triangles,
-            vertexTypes = vertexTypesOut, 
+            vertexTypes = vertexTypesOut,
             nodeMin = node.bounds.min,
             nodeSize = node.bounds.size.x
         };
@@ -157,7 +156,7 @@ public class Chunk : MonoBehaviour
     public void DisposeChunkResources()
     {
         if (densityMap.IsCreated) densityMap.Dispose();
-        if (voxelTypes.IsCreated) voxelTypes.Dispose();  
+        if (voxelTypes.IsCreated) voxelTypes.Dispose();
     }
 
     void OnDestroy()

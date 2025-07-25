@@ -6,7 +6,7 @@ using Unity.Mathematics;
 [BurstCompile]
 public struct ApplyLayersJob : IJob
 {
-    public NativeArray<TerrainLayer> layers;
+    [ReadOnly] public NativeArray<TerrainLayer> layers;
     public NativeArray<float> density;
     public NativeArray<byte> voxelTypes; 
     public int chunkSize;

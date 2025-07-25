@@ -22,8 +22,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private TerrainGenerator terrainGenerator;
 
-    // The dictionary now stores a tuple of the task and the chunk.
-    private Dictionary<int, (Task<Chunk.MeshData> task, Chunk chunk)> generationTasks;
+    private Dictionary<int, (JobHandle jobHandle, Chunk chunk, Chunk.MeshData meshData)> generationJobs;
 
     public NativeArray<int> triangulationTable;
     public NativeArray<int3> cornerOffsets;
@@ -63,11 +62,11 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         nodes = new NativeList<OctreeNode>(Allocator.Persistent);
         activeChunks = new Dictionary<int, Chunk>();
-        // Initialize the new dictionary type.
-        generationTasks = new Dictionary<int, (Task<Chunk.MeshData> task, Chunk chunk)>();
+        generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
         terrainGenerator = new TerrainGenerator();
+        terrainGenerator.Initialize();
     }
 
     private void InitializeMarchingCubesTables()
@@ -80,11 +79,20 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        foreach (var genJob in generationJobs.Values)
+        {
+            genJob.jobHandle.Complete();
+            genJob.meshData.Dispose();
+        }
+        generationJobs.Clear();
+
         if (nodes.IsCreated) nodes.Dispose();
         if (triangulationTable.IsCreated) triangulationTable.Dispose();
         if (cornerOffsets.IsCreated) cornerOffsets.Dispose();
         if (cornerIndexAFromEdge.IsCreated) cornerIndexAFromEdge.Dispose();
         if (cornerIndexBFromEdge.IsCreated) cornerIndexBFromEdge.Dispose();
+        
+        terrainGenerator.Dispose();
     }
 
     private void Update()
@@ -115,7 +123,7 @@ public class OctreeTerrainManager : MonoBehaviour
         foreach (var index in toGenerate) GenerateChunk(index);
         foreach (var index in toDestroy) DestroyChunk(index);
 
-        ProcessCompletedTasks();
+        ProcessCompletedJobs();
 
         toSubdivide.Dispose();
         toMerge.Dispose();
@@ -123,32 +131,30 @@ public class OctreeTerrainManager : MonoBehaviour
         toDestroy.Dispose();
     }
 
-    private void ProcessCompletedTasks()
+    private void ProcessCompletedJobs()
     {
-        var completedTaskIndices = new List<int>();
-        foreach (var entry in generationTasks)
+        var completedJobIndices = new List<int>();
+        foreach (var entry in generationJobs)
         {
-            if (entry.Value.task.IsCompleted)
+            if (entry.Value.jobHandle.IsCompleted)
             {
-                completedTaskIndices.Add(entry.Key);
+                completedJobIndices.Add(entry.Key);
             }
         }
 
-        foreach (var index in completedTaskIndices)
+        foreach (var index in completedJobIndices)
         {
-            var (task, chunk) = generationTasks[index];
-            generationTasks.Remove(index);
+            var (jobHandle, chunk, meshData) = generationJobs[index];
+            generationJobs.Remove(index);
 
-            var meshData = task.Result;
+            jobHandle.Complete();
 
             if (activeChunks.ContainsKey(index) && activeChunks[index] == chunk)
             {
-                // Chunk is still active, apply the mesh
                 chunk.ApplyGeneratedMesh(meshData);
             }
             else
             {
-                // Chunk was destroyed, dispose the mesh data and return the chunk to the pool
                 if (meshData.IsCreated) meshData.Dispose();
                 chunkPool.Return(chunk);
             }
@@ -213,14 +219,14 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void GenerateChunk(int nodeIndex)
     {
-        if (!activeChunks.ContainsKey(nodeIndex) && !generationTasks.ContainsKey(nodeIndex))
+        if (!activeChunks.ContainsKey(nodeIndex) && !generationJobs.ContainsKey(nodeIndex))
         {
             var chunk = chunkPool.Get();
             chunk.gameObject.SetActive(true);
             activeChunks[nodeIndex] = chunk;
 
-            var task = Task.Run(() => chunk.GenerateTerrain(nodes[nodeIndex]));
-            generationTasks[nodeIndex] = (task, chunk);
+            var jobHandle = chunk.ScheduleTerrainGeneration(nodes[nodeIndex], out var meshData);
+            generationJobs[nodeIndex] = (jobHandle, chunk, meshData);
         }
     }
 
@@ -228,13 +234,10 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
-            if (!generationTasks.ContainsKey(nodeIndex))
+            if (!generationJobs.ContainsKey(nodeIndex))
             {
-                // No generation task, so it's safe to return to the pool immediately.
                 chunkPool.Return(chunk);
             }
-            // If there is a generation task, we just remove the chunk from activeChunks.
-            // ProcessCompletedTasks will handle returning it to the pool later.
             activeChunks.Remove(nodeIndex);
         }
     }
