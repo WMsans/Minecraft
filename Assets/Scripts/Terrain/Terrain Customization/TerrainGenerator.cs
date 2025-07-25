@@ -1,19 +1,26 @@
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 
 public class TerrainGenerator
 {
-    public List<TerrainLayer> layers = new(){new PerlinNoiseLayer()};
+    public List<TerrainLayer> layers = new(){ PerlinNoiseLayer.Create() };
 
     public void ApplyLayers(NativeArray<float> density, int chunkSize, float3 offset, float scale)
     {
-        foreach (var layer in layers)
+        var layersArray = new NativeArray<TerrainLayer>(layers.ToArray(), Allocator.TempJob);
+
+        var job = new ApplyLayersJob
         {
-            if (layer.enabled)
-            {
-                layer.Apply(density, chunkSize, offset, scale);
-            }
-        }
+            layers = layersArray,
+            density = density,
+            chunkSize = chunkSize,
+            offset = offset,
+            scale = scale
+        };
+        job.Schedule().Complete();
+
+        layersArray.Dispose();
     }
 }
