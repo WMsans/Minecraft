@@ -13,6 +13,7 @@ public class Chunk : MonoBehaviour
 
     private NativeArray<float> densityMap;
     private BurstOctreeNode node;
+    private TerrainGenerator terrainGenerator;
 
     // A new struct to hold the generated mesh data
     public struct MeshData
@@ -27,12 +28,13 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    public void Initialize(Material mat)
+    public void Initialize(Material mat, TerrainGenerator terrainGenerator)
     {
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer.material = mat;
+        this.terrainGenerator = terrainGenerator;
     }
 
     public MeshData GenerateTerrain(BurstOctreeNode node)
@@ -46,17 +48,11 @@ public class Chunk : MonoBehaviour
             densityMap = new NativeArray<float>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
         }
 
+        terrainGenerator.ApplyLayers(densityMap, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x);
+
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
-
-        var noiseJob = new NoiseJob
-        {
-            density = densityMap,
-            chunkSize = TerrainSettings.MIN_NODE_SIZE,
-            offset = new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z),
-            scale = node.bounds.size.x
-        };
-
+        
         var marchingCubesJob = new MarchingCubesJob
         {
             density = densityMap,
@@ -72,10 +68,7 @@ public class Chunk : MonoBehaviour
             nodeSize = node.bounds.size.x
         };
 
-        noiseJob.Schedule(densityMap.Length, 64).Complete();
         marchingCubesJob.Schedule().Complete();
-
-        // We no longer dispose the density map here.
 
         return new MeshData { vertices = vertices, triangles = triangles };
     }

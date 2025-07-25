@@ -20,6 +20,8 @@ public class OctreeTerrainManager : MonoBehaviour
     private Dictionary<int, Chunk> activeChunks;
     private Pool<Chunk> chunkPool;
 
+    private TerrainGenerator terrainGenerator;
+
     // The dictionary now stores a tuple of the task and the chunk.
     private Dictionary<int, (Task<Chunk.MeshData> task, Chunk chunk)> generationTasks;
 
@@ -45,7 +47,7 @@ public class OctreeTerrainManager : MonoBehaviour
             GameObject chunkObject = new GameObject("Chunk");
             chunkObject.transform.parent = transform;
             Chunk chunk = chunkObject.AddComponent<Chunk>();
-            chunk.Initialize(terrainMaterial);
+            chunk.Initialize(terrainMaterial, terrainGenerator);
             chunk.gameObject.SetActive(false);
             return chunk;
         }, (chunk) =>
@@ -64,6 +66,8 @@ public class OctreeTerrainManager : MonoBehaviour
         // Initialize the new dictionary type.
         generationTasks = new Dictionary<int, (Task<Chunk.MeshData> task, Chunk chunk)>();
         nodes.Add(new BurstOctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
+
+        terrainGenerator = new TerrainGenerator();
     }
 
     private void InitializeMarchingCubesTables()
