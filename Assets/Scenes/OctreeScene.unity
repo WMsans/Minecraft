@@ -575,6 +575,7 @@ MonoBehaviour:
   playerCamera: {fileID: 330585545}
   modificationStrength: 5
   modificationRadius: 5
+  editCoolDown: 0.1
 --- !u!1 &1734537370
 GameObject:
   m_ObjectHideFlags: 0

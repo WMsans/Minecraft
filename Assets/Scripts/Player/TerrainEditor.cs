@@ -5,14 +5,16 @@ public class TerrainEditor : MonoBehaviour
     public Camera playerCamera;
     public float modificationStrength = 5f;
     public float modificationRadius = 2f;
+    public float editCoolDown;
+    private float lastEditTime;
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0)) // Left-click to dig
+        if (Input.GetMouseButton(0) && CanEdit()) 
         {
             ModifyTerrain(true);
         }
-        else if (Input.GetMouseButtonDown(1)) // Right-click to place
+        else if (Input.GetMouseButton(1) && CanEdit()) 
         {
             ModifyTerrain(false);
         }
@@ -21,10 +23,11 @@ public class TerrainEditor : MonoBehaviour
     private void ModifyTerrain(bool dig)
     {
         Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            float strength = dig ? -modificationStrength : modificationStrength;
-            OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius);
-        }
+        if (!Physics.Raycast(ray, out RaycastHit hit)) return;
+        float strength = dig ? -modificationStrength : modificationStrength;
+        OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius);
+        lastEditTime = Time.time;
     }
+
+    private bool CanEdit() => Time.time - lastEditTime > editCoolDown;
 }

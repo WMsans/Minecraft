@@ -39,7 +39,13 @@ public class Chunk : MonoBehaviour
     {
         this.node = node;
 
-        densityMap = new NativeArray<float>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
+        // The density map is now a member variable. 
+        // We only need to allocate it if it hasn't been already.
+        if (!densityMap.IsCreated)
+        {
+            densityMap = new NativeArray<float>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
+        }
+
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
 
@@ -69,7 +75,7 @@ public class Chunk : MonoBehaviour
         noiseJob.Schedule(densityMap.Length, 64).Complete();
         marchingCubesJob.Schedule().Complete();
 
-        if (densityMap.IsCreated) densityMap.Dispose();
+        // We no longer dispose the density map here.
 
         return new MeshData { vertices = vertices, triangles = triangles };
     }
