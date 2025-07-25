@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Jobs;
+using System.Threading.Tasks;
 
 public class OctreeTerrainManager : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class OctreeTerrainManager : MonoBehaviour
     private NativeList<BurstOctreeNode> nodes;
     private Dictionary<int, Chunk> activeChunks;
     private Pool<Chunk> chunkPool;
+
+    private Dictionary<int, Task<Chunk.MeshData>> generationTasks;
+    private Queue<KeyValuePair<int, Chunk.MeshData>> completedChunks;
 
     public NativeArray<int> triangulationTable;
     public NativeArray<int3> cornerOffsets;
@@ -42,11 +46,10 @@ public class OctreeTerrainManager : MonoBehaviour
             chunkObject.transform.parent = transform;
             Chunk chunk = chunkObject.AddComponent<Chunk>();
             chunk.Initialize(terrainMaterial);
-            chunk.gameObject.SetActive(false); // Ensure chunks start as inactive
+            chunk.gameObject.SetActive(false);
             return chunk;
         }, (chunk) =>
         {
-            // No longer need to set active here
         }, (chunk) =>
         {
             chunk.DisposeChunkResources();
@@ -58,6 +61,8 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         nodes = new NativeList<BurstOctreeNode>(Allocator.Persistent);
         activeChunks = new Dictionary<int, Chunk>();
+        generationTasks = new Dictionary<int, Task<Chunk.MeshData>>();
+        completedChunks = new Queue<KeyValuePair<int, Chunk.MeshData>>();
         nodes.Add(new BurstOctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
     }
 
@@ -101,11 +106,12 @@ public class OctreeTerrainManager : MonoBehaviour
 
         job.Schedule().Complete();
 
-        // Process results
         foreach (var index in toSubdivide) Subdivide(index);
         foreach (var index in toMerge) Merge(index);
         foreach (var index in toGenerate) GenerateChunk(index);
         foreach (var index in toDestroy) DestroyChunk(index);
+
+        ProcessCompletedTasks();
 
         toSubdivide.Dispose();
         toMerge.Dispose();
@@ -113,15 +119,44 @@ public class OctreeTerrainManager : MonoBehaviour
         toDestroy.Dispose();
     }
 
-    private void Subdivide(int nodeIndex)
+    private void ProcessCompletedTasks()
     {
-        var node = nodes[nodeIndex];
-        if (activeChunks.ContainsKey(nodeIndex))
+        var completedTaskIndices = new List<int>();
+        foreach (var entry in generationTasks)
         {
-            chunkPool.Return(activeChunks[nodeIndex]);
-            activeChunks.Remove(nodeIndex);
+            if (entry.Value.IsCompleted)
+            {
+                completedChunks.Enqueue(new KeyValuePair<int, Chunk.MeshData>(entry.Key, entry.Value.Result));
+                completedTaskIndices.Add(entry.Key);
+            }
         }
 
+        foreach (var index in completedTaskIndices)
+        {
+            generationTasks.Remove(index);
+        }
+
+        while (completedChunks.Count > 0)
+        {
+            var result = completedChunks.Dequeue();
+            if (activeChunks.TryGetValue(result.Key, out Chunk chunk))
+            {
+                chunk.ApplyGeneratedMesh(result.Value);
+            }
+            else
+            {
+                // If the chunk was destroyed before the task completed, just dispose the data
+                if (result.Value.IsCreated) result.Value.Dispose();
+            }
+        }
+    }
+
+
+    private void Subdivide(int nodeIndex)
+    {
+        DestroyChunk(nodeIndex);
+
+        var node = nodes[nodeIndex];
         node.isLeaf = false;
         node.childrenIndex = nodes.Length;
         nodes[nodeIndex] = node;
@@ -129,64 +164,43 @@ public class OctreeTerrainManager : MonoBehaviour
         float childSize = node.bounds.size.x / 2f;
         float offset = childSize / 2f;
 
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(-offset, -offset, -offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(offset, -offset, -offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(offset, -offset, offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(-offset, -offset, offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(-offset, offset, -offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(offset, offset, -offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(offset, offset, offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
-        nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + new Vector3(-offset, offset, offset), new Vector3(childSize, childSize, childSize)), node.depth + 1));
+        for (int i = 0; i < 8; i++)
+        {
+            Vector3 centerOffset = new Vector3(
+                ((i & 1) == 0 ? -offset : offset),
+                ((i & 4) == 0 ? -offset : offset),
+                ((i & 2) == 0 ? -offset : offset)
+            );
+            nodes.Add(new BurstOctreeNode(new Bounds(node.bounds.center + centerOffset, new Vector3(childSize, childSize, childSize)), node.depth + 1));
+        }
     }
 
     private void Merge(int nodeIndex)
     {
         var node = nodes[nodeIndex];
-
-        // If it's already a leaf or has no children, there's nothing to merge.
-        if (node.isLeaf || node.childrenIndex < 0)
-        {
-            return;
-        }
-
-        // Use a stack to find and destroy all descendant chunks.
+        if (node.isLeaf || node.childrenIndex < 0) return;
+        
         var stack = new Stack<int>();
-        for (int i = 0; i < 8; i++)
-        {
-            stack.Push(node.childrenIndex + i);
-        }
+        stack.Push(node.childrenIndex);
 
         while (stack.Count > 0)
         {
             int currentIndex = stack.Pop();
-            if (currentIndex < 0 || currentIndex >= nodes.Length) continue;
-
-            var currentNode = nodes[currentIndex];
-
-            // If this node is a parent, add its children to the stack for cleanup.
-            if (!currentNode.isLeaf && currentNode.childrenIndex != -1)
+            for(int i = 0; i < 8; i++)
             {
-                for (int i = 0; i < 8; i++)
+                var childNode = nodes[currentIndex + i];
+                if(!childNode.isLeaf)
                 {
-                    stack.Push(currentNode.childrenIndex + i);
+                    stack.Push(childNode.childrenIndex);
                 }
-            }
-
-            // Destroy the chunk associated with this descendant node.
-            if (activeChunks.ContainsKey(currentIndex))
-            {
-                chunkPool.Return(activeChunks[currentIndex]);
-                activeChunks.Remove(currentIndex);
+                 DestroyChunk(currentIndex + i);
             }
         }
 
-        // Now that children's chunks are gone, make this node a leaf.
         node.isLeaf = true;
         node.childrenIndex = -1;
         nodes[nodeIndex] = node;
-
-        // The job didn't add this new leaf to `toGenerate` because it saw it as a parent.
-        // We need to generate its chunk now if it's visible.
+        
         if (FrustumCulling.TestAABB(FrustumCulling.GetFrustumPlanes(mainCamera), node.bounds))
         {
             GenerateChunk(nodeIndex);
@@ -195,17 +209,26 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void GenerateChunk(int nodeIndex)
     {
-        if (!activeChunks.ContainsKey(nodeIndex))
+        if (!activeChunks.ContainsKey(nodeIndex) && !generationTasks.ContainsKey(nodeIndex))
         {
             var chunk = chunkPool.Get();
-            chunk.GenerateTerrain(nodes[nodeIndex]);
             chunk.gameObject.SetActive(true);
             activeChunks[nodeIndex] = chunk;
+
+            var task = Task.Run(() =>
+            {
+                return chunk.GenerateTerrain(nodes[nodeIndex]);
+            });
+            generationTasks[nodeIndex] = task;
         }
     }
 
     private void DestroyChunk(int nodeIndex)
     {
+        if (generationTasks.ContainsKey(nodeIndex))
+        {
+            generationTasks.Remove(nodeIndex);
+        }
         if (activeChunks.ContainsKey(nodeIndex))
         {
             chunkPool.Return(activeChunks[nodeIndex]);
@@ -217,7 +240,6 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
 
-        // Iterate over all nodes to find which ones to modify
         for (int i = 0; i < nodes.Length; i++)
         {
             var node = nodes[i];

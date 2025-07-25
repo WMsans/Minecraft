@@ -27,15 +27,16 @@ public struct DensityModificationJob : IJob
 
                     float3 modifiedPos = math.floor(worldPos) + offset;
 
-                    int densityX = (int)((modifiedPos.x - nodeBounds.min.x) / nodeBounds.size.x * 16);
-                    int densityY = (int)((modifiedPos.y - nodeBounds.min.y) / nodeBounds.size.x * 16);
-                    int densityZ = (int)((modifiedPos.z - nodeBounds.min.z) / nodeBounds.size.x * 16);
+                    // Use the new constant
+                    int densityX = (int)((modifiedPos.x - nodeBounds.min.x) / nodeBounds.size.x * TerrainSettings.MIN_NODE_SIZE);
+                    int densityY = (int)((modifiedPos.y - nodeBounds.min.y) / nodeBounds.size.x * TerrainSettings.MIN_NODE_SIZE);
+                    int densityZ = (int)((modifiedPos.z - nodeBounds.min.z) / nodeBounds.size.x * TerrainSettings.MIN_NODE_SIZE);
 
-                    if (densityX >= 0 && densityX <= 16 &&
-                        densityY >= 0 && densityY <= 16 &&
-                        densityZ >= 0 && densityZ <= 16)
+                    if (densityX >= 0 && densityX <= TerrainSettings.MIN_NODE_SIZE &&
+                        densityY >= 0 && densityY <= TerrainSettings.MIN_NODE_SIZE &&
+                        densityZ >= 0 && densityZ <= TerrainSettings.MIN_NODE_SIZE)
                     {
-                        int index = densityX + (16 + 1) * (densityY + (16 + 1) * densityZ);
+                        int index = densityX + (TerrainSettings.MIN_NODE_SIZE + 1) * (densityY + (TerrainSettings.MIN_NODE_SIZE + 1) * densityZ);
                         if (index >= 0 && index < densityMap.Length)
                         {
                             float falloff = 1 - (math.length(offset) / radius);
