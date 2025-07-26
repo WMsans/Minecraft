@@ -11,24 +11,22 @@ public struct OctreeUpdateJob : IJob
     [ReadOnly] public FrustumCulling.FrustumPlanes frustumPlanes;
     [ReadOnly] public int maxDepth;
 
-    [ReadOnly] public NativeList<OctreeNode> nodes; // Changed to ReadOnly
+    [ReadOnly] public NativeList<OctreeNode> nodes;
     public NativeList<int> toSubdivide;
     public NativeList<int> toMerge;
     public NativeList<int> toGenerate;
-    public NativeList<int> toDestroy;
+    public NativeList<int> toHide; 
 
     public void Execute()
     {
-        // Use a stack for a depth-first traversal of the octree
         var stack = new NativeList<int>(Allocator.Temp);
         if (nodes.Length > 0)
         {
-            stack.Add(0); // Start with the root node (index 0)
+            stack.Add(0); 
         }
 
         while (stack.Length > 0)
         {
-            // Pop a node from the stack
             int nodeIndex = stack[stack.Length - 1];
             stack.RemoveAt(stack.Length - 1);
 
@@ -50,15 +48,14 @@ public struct OctreeUpdateJob : IJob
                     }
                     else
                     {
-                        toDestroy.Add(nodeIndex);
+                        toHide.Add(nodeIndex);
                     }
                 }
             }
-            else // It's a parent node
+            else 
             {
                 if (shouldSubdivide)
                 {
-                    // This parent is close, so process its children
                     for (int i = 0; i < 8; i++)
                     {
                         stack.Add(node.childrenIndex + i);
@@ -66,8 +63,6 @@ public struct OctreeUpdateJob : IJob
                 }
                 else
                 {
-                    // This parent is far, so it should be merged.
-                    // Its children are NOT added to the stack, so they won't be processed.
                     toMerge.Add(nodeIndex);
                 }
             }
