@@ -308,6 +308,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
+            chunk.ClearMesh(); // Ensure the mesh is cleared
             chunkPool.Return(chunk);
             activeChunks.Remove(nodeIndex);
         }
@@ -333,36 +334,47 @@ public class OctreeTerrainManager : MonoBehaviour
         Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
         List<int> modifiedNodeIndices = new List<int>();
 
-        for (int i = 0; i < nodes.Length; i++)
+        // Traverse the octree to find intersecting leaf nodes
+        var stack = new Stack<int>();
+        if (nodes.Length > 0)
         {
-            var node = nodes[i];
-            if (node.isLeaf && node.bounds.Intersects(modificationBounds))
+            stack.Push(0); // Start from the root
+        }
+
+        while (stack.Count > 0)
+        {
+            int nodeIndex = stack.Pop();
+            var node = nodes[nodeIndex];
+
+            if (!node.bounds.Intersects(modificationBounds))
             {
-                modifiedNodeIndices.Add(i);
+                continue;
+            }
+
+            if (node.isLeaf)
+            {
+                modifiedNodeIndices.Add(nodeIndex);
+            }
+            else if(node.childrenIndex != -1)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    stack.Push(node.childrenIndex + i);
+                }
             }
         }
 
+
         foreach(var index in modifiedNodeIndices)
         {
-            // Instead of destroying and generating, regenerate
             RegenerateChunk(index);
         }
     }
     
     private void RegenerateChunk(int nodeIndex)
     {
-        if (generationJobs.TryGetValue(nodeIndex, out var job))
-        {
-            job.jobHandle.Complete();
-            job.meshData.Dispose();
-            generationJobs.Remove(nodeIndex);
-        }
-
-        if (activeChunkData.TryGetValue(nodeIndex, out var data))
-        {
-            data.Dispose();
-            activeChunkData.Remove(nodeIndex);
-        }
+        // Always destroy the old chunk completely before regenerating
+        DestroyChunk(nodeIndex);
 
         var node = nodes[nodeIndex];
 
@@ -384,20 +396,13 @@ public class OctreeTerrainManager : MonoBehaviour
 
         applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
 
-        if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
-        {
-            var jobHandle = chunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
-            generationJobs[nodeIndex] = (jobHandle, chunk, meshData);
-        }
-        else
-        {
-            var newChunk = chunkPool.Get();
-            newChunk.gameObject.SetActive(true);
-            activeChunks[nodeIndex] = newChunk;
+        // Always get a new chunk from the pool
+        var newChunk = chunkPool.Get();
+        newChunk.gameObject.SetActive(true);
+        activeChunks[nodeIndex] = newChunk;
 
-            var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
-            generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
-        }
+        var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
+        generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
     }
 
     private void OnDrawGizmos()

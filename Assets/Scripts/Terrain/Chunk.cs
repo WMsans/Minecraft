@@ -35,6 +35,12 @@ public class Chunk : MonoBehaviour
         meshRenderer.material = mat;
         this.terrainGenerator = terrainGenerator;
     }
+    
+    public void ClearMesh()
+    {
+        meshFilter.mesh = null;
+        meshCollider.sharedMesh = null;
+    }
 
     public JobHandle ScheduleTerrainGeneration(OctreeNode node, NativeArray<float> densityMap, NativeArray<byte> voxelTypes, JobHandle dependency, out MeshData meshData)
     {
