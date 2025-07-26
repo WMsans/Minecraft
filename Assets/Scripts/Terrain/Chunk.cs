@@ -7,9 +7,9 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class Chunk : MonoBehaviour
 {
-    private MeshFilter meshFilter;
-    private MeshRenderer meshRenderer;
-    private MeshCollider meshCollider;
+    public MeshFilter meshFilter;
+    public MeshRenderer meshRenderer;
+    public MeshCollider meshCollider;
 
     public struct MeshData
     {
@@ -25,12 +25,8 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    public void Initialize(Material mat, TerrainGenerator terrainGenerator)
+    public void Initialize(TerrainGenerator terrainGenerator)
     {
-        meshFilter = GetComponent<MeshFilter>();
-        meshRenderer = GetComponent<MeshRenderer>();
-        meshCollider = GetComponent<MeshCollider>();
-        meshRenderer.material = mat;
     }
     
     public void ClearMesh()

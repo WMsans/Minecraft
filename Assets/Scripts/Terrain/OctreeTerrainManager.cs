@@ -11,11 +11,12 @@ public class OctreeTerrainManager : MonoBehaviour
     public static OctreeTerrainManager Instance;
 
     [Header("Terrain Settings")]
-    public Material terrainMaterial;
     public Transform player;
     public Camera mainCamera;
     public int maxDepth = 2;
     public float nodeSize = 64;
+    [Header("Chunk Settings")] 
+    public Chunk chunkPrefab;
 
     private NativeList<OctreeNode> nodes;
     private Dictionary<int, Chunk> activeChunks;
@@ -58,10 +59,8 @@ public class OctreeTerrainManager : MonoBehaviour
 
         chunkPool = new Pool<Chunk>(() =>
         {
-            GameObject chunkObject = new GameObject("Chunk");
-            chunkObject.transform.parent = transform;
-            Chunk chunk = chunkObject.AddComponent<Chunk>();
-            chunk.Initialize(terrainMaterial, terrainGenerator);
+            Chunk chunk = Instantiate(chunkPrefab, transform, true);
+            chunk.Initialize(terrainGenerator);
             chunk.gameObject.SetActive(false);
             return chunk;
         }, (chunk) =>

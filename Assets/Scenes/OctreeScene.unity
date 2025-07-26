@@ -620,11 +620,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ca8bc34462a4780818e43319f5c0f1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainMaterial: {fileID: 2100000, guid: ae387f2b7998e67409bc73742ce93986, type: 2}
   player: {fileID: 1726203990}
   mainCamera: {fileID: 330585545}
   maxDepth: 6
   nodeSize: 2048
+  chunkPrefab: {fileID: 8453252405567975763, guid: 84e79c0b898fadf4bb937720a0535148, type: 3}
 --- !u!1 &1887905483
 GameObject:
   m_ObjectHideFlags: 0
