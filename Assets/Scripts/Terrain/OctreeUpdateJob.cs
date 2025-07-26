@@ -42,7 +42,7 @@ public struct OctreeUpdateJob : IJob
                 }
                 else
                 {
-                    if (FrustumCulling.TestAABB(frustumPlanes, node.bounds))
+                    if (FrustumCulling.TestAABB(frustumPlanes, node.bounds) || node.depth >= maxDepth)
                     {
                         toGenerate.Add(nodeIndex);
                     }
