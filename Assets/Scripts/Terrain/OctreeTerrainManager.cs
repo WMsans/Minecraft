@@ -373,15 +373,38 @@ public class OctreeTerrainManager : MonoBehaviour
     
     private void RegenerateChunk(int nodeIndex)
     {
-        // Always destroy the old chunk completely before regenerating
-        DestroyChunk(nodeIndex);
+        // If a job is already running for this chunk, let it finish.
+        // Or, if you want the newest edit to always take priority, you could cancel the old job.
+        // For now, we'll just return to prevent scheduling multiple jobs.
+        if (generationJobs.ContainsKey(nodeIndex))
+        {
+            return;
+        }
+
+        // We must have an active chunk to regenerate without flashing.
+        if (!activeChunks.TryGetValue(nodeIndex, out Chunk chunkToUpdate))
+        {
+            // This can happen if we try to modify a chunk that isn't
+            // currently visible/active. In this case, we can just generate it.
+            GenerateChunk(nodeIndex);
+            return;
+        }
+
+        // Clean up any old data associated with a previous job for this chunk
+        if (activeChunkData.TryGetValue(nodeIndex, out var oldData))
+        {
+            oldData.Dispose();
+            activeChunkData.Remove(nodeIndex);
+        }
 
         var node = nodes[nodeIndex];
 
+        // Allocate new data containers for the job
         var chunkData = new ChunkData();
         chunkData.Allocate();
         activeChunkData[nodeIndex] = chunkData;
 
+        // Schedule the jobs to generate the new density and voxel data
         var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
     
         var applyModsJob = new ApplyModificationsJob
@@ -396,13 +419,12 @@ public class OctreeTerrainManager : MonoBehaviour
 
         applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
 
-        // Always get a new chunk from the pool
-        var newChunk = chunkPool.Get();
-        newChunk.gameObject.SetActive(true);
-        activeChunks[nodeIndex] = newChunk;
-
-        var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
-        generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
+        // Schedule the final mesh generation job.
+        // We crucially associate this job with the *existing, visible* chunk.
+        var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
+        
+        // Add the job to our tracking dictionary. ProcessCompletedJobs will handle applying the mesh.
+        generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
 
     private void OnDrawGizmos()
