@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst;
@@ -5,7 +6,7 @@ using Unity.Collections;
 using UnityEngine;
 
 [BurstCompile]
-public struct ChunkData
+public struct ChunkData : IDisposable
 {
     public NativeArray<float> densityMap;
     public NativeArray<byte> voxelTypes;

@@ -10,8 +10,6 @@ public class Chunk : MonoBehaviour
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private MeshCollider meshCollider;
-    private OctreeNode node;
-    private TerrainGenerator terrainGenerator;
 
     public struct MeshData
     {
@@ -33,7 +31,6 @@ public class Chunk : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer.material = mat;
-        this.terrainGenerator = terrainGenerator;
     }
     
     public void ClearMesh()
@@ -44,8 +41,6 @@ public class Chunk : MonoBehaviour
 
     public JobHandle ScheduleTerrainGeneration(OctreeNode node, NativeArray<float> densityMap, NativeArray<byte> voxelTypes, JobHandle dependency, out MeshData meshData)
     {
-        this.node = node;
-
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
         var vertexTypesOut = new NativeList<float>(Allocator.Persistent);
