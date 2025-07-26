@@ -15,56 +15,59 @@ public struct ApplyModificationsJob : IJob
     public NativeArray<byte> voxelTypes;
     [ReadOnly] public int chunkSize;
 
-    public void Execute() 
-    { 
-            for (int i = 0; i < modifications.Length; i++) 
+    public void Execute()
+    {
+        // Calculate the scale of the chunk's grid points relative to world space.
+        float scale = nodeBounds.size.x / chunkSize;
+
+        // Process each modification.
+        for (int i = 0; i < modifications.Length; i++)
+        {
+            var mod = modifications[i];
+            
+            // Create bounds for the modification to check for intersection with the current node.
+            Bounds modBounds = new Bounds(mod.worldPos, new float3(mod.radius, mod.radius, mod.radius) * 2);
+            if (!modBounds.Intersects(nodeBounds)) continue;
+
+            // Calculate the iteration bounds in the density grid's coordinates.
+            float3 modMinGrid = (new float3(mod.worldPos) - new float3(mod.radius) - new float3(nodeBounds.min)) / scale;
+            float3 modMaxGrid = (new float3(mod.worldPos) + new float3(mod.radius) - new float3(nodeBounds.min)) / scale;
+
+            // Clamp the iteration bounds to the chunk's dimensions.
+            int3 min = (int3)math.max(0, math.floor(modMinGrid));
+            int3 max = (int3)math.min(chunkSize, math.ceil(modMaxGrid));
+
+            // Iterate through the affected density grid cells.
+            for (int z = min.z; z <= max.z; z++)
             {
-                var mod = modifications[i];
-                
-                Bounds modBounds = new Bounds(mod.worldPos, new float3(mod.radius, mod.radius, mod.radius) * 2);
-                if (!modBounds.Intersects(nodeBounds)) continue;
-
-                int buildRadius = (int)math.ceil(mod.radius);
-                for (int x = -buildRadius; x <= buildRadius; x++)
+                for (int y = min.y; y <= max.y; y++)
                 {
-                    for (int y = -buildRadius; y <= buildRadius; y++)
+                    for (int x = min.x; x <= max.x; x++)
                     {
-                        for (int z = -buildRadius; z <= buildRadius; z++)
+                        // Calculate the world position of the current density grid cell.
+                        float3 gridPointPos = new float3(nodeBounds.min) + new float3(x, y, z) * scale;
+                        
+                        // Check if the cell is within the modification's spherical radius.
+                        float distance = math.distance(gridPointPos, mod.worldPos);
+                        if (distance > mod.radius) continue;
+
+                        int index = x + (chunkSize + 1) * (y + (chunkSize + 1) * z);
+
+                        if (index >= 0 && index < densityMap.Length)
                         {
-                            float3 offset = new float3(x, y, z);
-                            if (math.length(offset) > mod.radius) continue;
-
-                            float3 modifiedPos = math.floor(mod.worldPos) + offset;
-
-                            if (modifiedPos.x < nodeBounds.min.x || modifiedPos.x > nodeBounds.max.x ||
-                                modifiedPos.y < nodeBounds.min.y || modifiedPos.y > nodeBounds.max.y ||
-                                modifiedPos.z < nodeBounds.min.z || modifiedPos.z > nodeBounds.max.z)
+                            // Apply the modification with a falloff based on distance.
+                            float falloff = 1 - (distance / mod.radius);
+                            densityMap[index] += mod.strength * falloff;
+                            
+                            // If digging, update the voxel type.
+                            if(mod.strength < 0)
                             {
-                                continue;
-                            }
-
-                            int densityX = (int)((modifiedPos.x - nodeBounds.min.x) / nodeBounds.size.x * chunkSize);
-                            int densityY = (int)((modifiedPos.y - nodeBounds.min.y) / nodeBounds.size.y * chunkSize);
-                            int densityZ = (int)((modifiedPos.z - nodeBounds.min.z) / nodeBounds.size.z * chunkSize);
-
-                            if (densityX >= 0 && densityX <= chunkSize &&
-                                densityY >= 0 && densityY <= chunkSize &&
-                                densityZ >= 0 && densityZ <= chunkSize)
-                            {
-                                int index = densityX + (chunkSize + 1) * (densityY + (chunkSize + 1) * densityZ);
-                                if (index >= 0 && index < densityMap.Length)
-                                {
-                                    float falloff = 1 - (math.length(offset) / mod.radius);
-                                    densityMap[index] += mod.strength * falloff;
-                                    if(mod.strength < 0)
-                                    {
-                                        voxelTypes[index] = mod.newVoxelType;
-                                    }
-                                }
+                                voxelTypes[index] = mod.newVoxelType;
                             }
                         }
                     }
                 }
             }
+        }
     }
 }
