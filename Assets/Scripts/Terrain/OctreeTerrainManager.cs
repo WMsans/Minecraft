@@ -404,7 +404,6 @@ public class OctreeTerrainManager : MonoBehaviour
 
     public void ModifyTerrain(Vector3 worldPos, float strength, float radius, byte newVoxelType)
     {
-        // Complete jobs before modifying the list
         applyModificationsHandle.Complete();
 
         terrainModifications.Add(new TerrainModification
@@ -429,8 +428,59 @@ public class OctreeTerrainManager : MonoBehaviour
 
         foreach(var index in modifiedNodeIndices)
         {
-            DestroyChunk(index);
-            GenerateChunk(index);
+            // Instead of destroying and generating, regenerate
+            RegenerateChunk(index);
+        }
+    }
+    
+    private void RegenerateChunk(int nodeIndex)
+    {
+        if (generationJobs.TryGetValue(nodeIndex, out var job))
+        {
+            job.jobHandle.Complete();
+            job.meshData.Dispose();
+            generationJobs.Remove(nodeIndex);
+        }
+
+        if (activeChunkData.TryGetValue(nodeIndex, out var data))
+        {
+            data.Dispose();
+            activeChunkData.Remove(nodeIndex);
+        }
+
+        var node = nodes[nodeIndex];
+
+        var chunkData = new ChunkData();
+        chunkData.Allocate();
+        activeChunkData[nodeIndex] = chunkData;
+
+        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+    
+        var applyModsJob = new ApplyModificationsJob
+        {
+            modifications = this.terrainModifications,
+            nodeBounds = node.bounds,
+            densityMap = chunkData.densityMap,
+            voxelTypes = chunkData.voxelTypes,
+            chunkSize = TerrainSettings.MIN_NODE_SIZE
+        };
+        var applyModsHandle = applyModsJob.Schedule(applyLayersHandle);
+
+        applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
+
+        if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
+        {
+            var jobHandle = chunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
+            generationJobs[nodeIndex] = (jobHandle, chunk, meshData);
+        }
+        else
+        {
+            var newChunk = chunkPool.Get();
+            newChunk.gameObject.SetActive(true);
+            activeChunks[nodeIndex] = newChunk;
+
+            var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
+            generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
         }
     }
 
