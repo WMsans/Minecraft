@@ -78,20 +78,28 @@ public struct MarchingCubesJob : IJob
                         int a2 = cornerIndexAFromEdge[edgeIndex3];
                         int b2 = cornerIndexBFromEdge[edgeIndex3];
                         
-                        // Here we are simply taking the type of the first corner of the voxel.
-                        // You might want to implement a more sophisticated logic, e.g., dominant type.
                         byte type = cubeVoxelTypes[0];
 
-                        float3 vertA_local = InterpolateVertex(cubeDensities[a0], cubeDensities[b0], new float3(x, y, z) + cornerOffsets[a0] * step, new float3(x, y, z) + cornerOffsets[b0] * step);
-                        float3 vertB_local = InterpolateVertex(cubeDensities[a1], cubeDensities[b1], new float3(x, y, z) + cornerOffsets[a1] * step, new float3(x, y, z) + cornerOffsets[b1] * step);
-                        float3 vertC_local = InterpolateVertex(cubeDensities[a2], cubeDensities[b2], new float3(x, y, z) + cornerOffsets[a2] * step, new float3(x, y, z) + cornerOffsets[b2] * step);
+                        float3 p1_a = new float3(x,y,z) + cornerOffsets[a0] * step;
+                        float3 p1_b = new float3(x,y,z) + cornerOffsets[b0] * step;
+                        
+                        float3 p2_a = new float3(x,y,z) + cornerOffsets[a1] * step;
+                        float3 p2_b = new float3(x,y,z) + cornerOffsets[b1] * step;
+
+                        float3 p3_a = new float3(x,y,z) + cornerOffsets[a2] * step;
+                        float3 p3_b = new float3(x,y,z) + cornerOffsets[b2] * step;
+
+
+                        float3 vertA_local = p1_a + (0 - cubeDensities[a0]) / (cubeDensities[b0] - cubeDensities[a0]) * (p1_b - p1_a);
+                        float3 vertB_local = p2_a + (0 - cubeDensities[a1]) / (cubeDensities[b1] - cubeDensities[a1]) * (p2_b - p2_a);
+                        float3 vertC_local = p3_a + (0 - cubeDensities[a2]) / (cubeDensities[b2] - cubeDensities[a2]) * (p3_b - p3_a);
+
 
                         // Convert local vertex positions to world space before adding them
                         vertices.Add(vertA_local * scale + nodeMin);
                         vertices.Add(vertB_local * scale + nodeMin);
                         vertices.Add(vertC_local * scale + nodeMin);
                         
-                        // New: add the type for each vertex
                         vertexTypes.Add(type);
                         vertexTypes.Add(type);
                         vertexTypes.Add(type);
@@ -108,15 +116,5 @@ public struct MarchingCubesJob : IJob
     private int CornerToIndex(int3 pos)
     {
         return pos.x + (chunkSize + 1) * (pos.y + (chunkSize + 1) * pos.z);
-    }
-
-    private float3 InterpolateVertex(float d1, float d2, float3 p1, float3 p2)
-    {
-        if (math.abs(d1 - d2) > 0.00001f)
-        {
-            float t = (0 - d1) / (d2 - d1);
-            return p1 + t * (p2 - p1);
-        }
-        return p1;
     }
 }
