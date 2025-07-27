@@ -11,6 +11,7 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 /[Pp]ackages/com.singularitygroup.hotreload/
+/[Aa]ssets/Plugins/
 *.log
 
 # MemoryCaptures can get excessive in size.
