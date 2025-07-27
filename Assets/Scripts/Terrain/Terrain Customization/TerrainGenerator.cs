@@ -5,7 +5,7 @@ using Unity.Mathematics;
 
 public class TerrainGenerator
 {
-    public List<TerrainLayer> layers = new() { PerlinNoiseLayer.Create() };
+    public List<TerrainLayer> layers = new() { PerlinNoiseLayer.Create(), BlockTypeLayer.Create() };
     private NativeArray<TerrainLayer> layersArray;
 
     public void Initialize()

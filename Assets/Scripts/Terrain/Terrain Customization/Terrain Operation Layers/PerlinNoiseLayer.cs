@@ -28,20 +28,6 @@ public static unsafe class PerlinNoiseLayer
             
             // The density is the current world height minus the noise-generated terrain height
             density[i] = worldY - noiseValue;
-            
-            // Example logic for setting voxel type based on height
-            if (worldY < -10)
-            {
-                voxelTypes[i] = 2; // Stone
-            }
-            else if (worldY < 0)
-            {
-                voxelTypes[i] = 1; // Dirt
-            }
-            else
-            {
-                voxelTypes[i] = 0; // Grass
-            }
         }
     }
 

@@ -25,7 +25,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _AOArray:
-        m_Texture: {fileID: 18700000, guid: e09285362cd71694886a0fb8d5427ef5, type: 2}
+        m_Texture: {fileID: 18700000, guid: f30acb059fe04754ab4b3e896ab1f953, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Block_Textures:
@@ -45,15 +45,31 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTexArray:
-        m_Texture: {fileID: 18700000, guid: 46ae48c0a68a0d643a5dfb5a8f054c0d, type: 2}
+        m_Texture: {fileID: 18700000, guid: edd8934662ae58c4c91b367e5d0a4df8, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalArray:
-        m_Texture: {fileID: 18700000, guid: 561d2f7e7c33fef499355a74774a5f89, type: 2}
+        m_Texture: {fileID: 18700000, guid: a14643d72c06c1d43a6a9d8f83aa1a72, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SmoothnessArray:
-        m_Texture: {fileID: 18700000, guid: 10f951ce8c43f954382ec32b24805379, type: 2}
+        m_Texture: {fileID: 18700000, guid: 6c3eb4c943dfa4748aa65d49be08ea49, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopAOArray:
+        m_Texture: {fileID: 18700000, guid: a9d01d36650000347bf0eb9892cdefb6, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopMainTexArray:
+        m_Texture: {fileID: 18700000, guid: 018bf252538f62241830a58d22230cf4, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopNormalArray:
+        m_Texture: {fileID: 18700000, guid: 782f1612b62a4d44aaa301f829f9474f, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopSmoothnessArray:
+        m_Texture: {fileID: 18700000, guid: c08d20b72b0af794e8da5ab21263c703, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -72,12 +88,12 @@ Material:
     m_Floats:
     - _BlendSharpness: 1
     - _DEBUGMODE: 0
-    - _DebugId: 1
+    - _DebugId: 0
     - _NormalStrenth: 178.92
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _Scale: 10
-    - _Smoothness: 0.3
+    - _Scale: 15
+    - _Smoothness: 0.45
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

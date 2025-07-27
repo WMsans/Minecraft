@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8cbd603c538547b40949c23ec6981298
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 269285
+  packageName: EditorAttributes
+  packageVersion: 2.8.0
+  assetPath: Assets/EditorAttributes/Samples/SampleScene.unity
+  uploadId: 770752
