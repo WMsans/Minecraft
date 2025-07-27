@@ -43,23 +43,13 @@ public class GraphNode : Node
     private void AddPropertyFields()
     {
         // Add fields based on layer type
-        if (Data.layerType == "PerlinNoiseTerrainLayer")
+        var fields = TerrainLayerRegistry.Instance.GetPropertiesName(Data.layerType);
+        for (var i = 0; i < fields.Length;i++)
         {
-            var scaleField = new FloatField("Noise Scale") { value = Data.properties[0] };
-            var strengthField = new FloatField("Noise Strength") { value = Data.properties[1] };
-            scaleField.RegisterValueChangedCallback(evt => Data.properties[0] = evt.newValue);
-            strengthField.RegisterValueChangedCallback(evt => Data.properties[1] = evt.newValue);
-            extensionContainer.Add(scaleField);
-            extensionContainer.Add(strengthField);
-        }
-        else if (Data.layerType == "BlockTypeTerrainLayer")
-        {
-            var stoneField = new FloatField("Stone Level") { value = Data.properties[0] };
-            var dirtField = new FloatField("Dirt Level") { value = Data.properties[1] };
-            stoneField.RegisterValueChangedCallback(evt => Data.properties[0] = evt.newValue);
-            dirtField.RegisterValueChangedCallback(evt => Data.properties[1] = evt.newValue);
-            extensionContainer.Add(stoneField);
-            extensionContainer.Add(dirtField);
+            var field = fields[i];
+            var floatField = new FloatField(field) { value = Data.properties[i] };
+            floatField.RegisterValueChangedCallback(evt => Data.properties[i] = evt.newValue);
+            extensionContainer.Add(floatField);
         }
     }
 }

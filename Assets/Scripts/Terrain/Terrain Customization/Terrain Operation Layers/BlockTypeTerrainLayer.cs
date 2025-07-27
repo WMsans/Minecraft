@@ -11,7 +11,7 @@ public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
         var defaultProps = new float[2];
         defaultProps[0] = defaultLayer.properties[0];
         defaultProps[1] = defaultLayer.properties[1];
-        TerrainLayerRegistry.Instance.Register(nameof(BlockTypeTerrainLayer), Create, defaultProps); 
+        TerrainLayerRegistry.Instance.Register(nameof(BlockTypeTerrainLayer), Create, Fields(), defaultProps); 
     }
 
     [BurstCompile]
@@ -74,4 +74,5 @@ public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
 
         return layer;
     }
+    private static string[] Fields() => new[] { "Stone Level", "Dirt Level" };
 }

@@ -12,7 +12,7 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
         var defaultProps = new float[2];
         defaultProps[0] = defaultLayer.properties[0];
         defaultProps[1] = defaultLayer.properties[1];
-        TerrainLayerRegistry.Instance.Register(nameof(PerlinNoiseTerrainLayer), Create, defaultProps); 
+        TerrainLayerRegistry.Instance.Register(nameof(PerlinNoiseTerrainLayer), Create, Fields(), defaultProps); 
     }
 
     [BurstCompile]
@@ -67,4 +67,6 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
 
         return layer;
     }
+
+    private static string[] Fields() => new[] { "Noise Scale", "Noise Strength" };
 }

@@ -64,6 +64,9 @@ public class OctreeTerrainManager : MonoBehaviour
             Destroy(this);
         }
 
+        TerrainLayerRegistry.Instance.FindAndRegisterLayers();
+        terrainGenerator = new TerrainGenerator(terrainGraph);
+
         chunkPool = new Pool<Chunk>(() =>
         {
             Chunk chunk = Instantiate(chunkPrefab, transform, true);
@@ -85,8 +88,6 @@ public class OctreeTerrainManager : MonoBehaviour
         activeChunkData = new Dictionary<int, ChunkData>();
         generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
-
-        terrainGenerator = new TerrainGenerator(terrainGraph);
 
         terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
     }
