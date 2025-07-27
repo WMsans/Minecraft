@@ -16,12 +16,15 @@ public class Chunk : MonoBehaviour
         public NativeList<float3> vertices;
         public NativeList<int> triangles;
         public NativeList<float> vertexTypes;
-        public bool IsCreated => vertices.IsCreated && triangles.IsCreated && vertexTypes.IsCreated;
+        public NativeList<float3> normals; // Add this line
+        public bool IsCreated => vertices.IsCreated && triangles.IsCreated && vertexTypes.IsCreated && normals.IsCreated;
+
         public void Dispose()
         {
             if (vertices.IsCreated) vertices.Dispose();
             if (triangles.IsCreated) triangles.Dispose();
             if (vertexTypes.IsCreated) vertexTypes.Dispose();
+            if (normals.IsCreated) normals.Dispose(); // And this one
         }
     }
 
@@ -40,6 +43,7 @@ public class Chunk : MonoBehaviour
         var vertices = new NativeList<float3>(Allocator.Persistent);
         var triangles = new NativeList<int>(Allocator.Persistent);
         var vertexTypesOut = new NativeList<float>(Allocator.Persistent);
+        var normals = new NativeList<float3>(Allocator.Persistent); // Allocate the normals list here
 
         var marchingCubesJob = new MarchingCubesJob
         {
@@ -54,12 +58,13 @@ public class Chunk : MonoBehaviour
             vertices = vertices,
             triangles = triangles,
             vertexTypes = vertexTypesOut,
+            normals = normals, // Pass the allocated list to the job
             nodeMin = node.bounds.min,
             nodeSize = node.bounds.size.x
         };
 
         var marchingCubesHandle = marchingCubesJob.Schedule(dependency);
-        meshData = new MeshData { vertices = vertices, triangles = triangles, vertexTypes = vertexTypesOut };
+        meshData = new MeshData { vertices = vertices, triangles = triangles, vertexTypes = vertexTypesOut, normals = normals };
         return marchingCubesHandle;
     }
 
@@ -80,9 +85,12 @@ public class Chunk : MonoBehaviour
             mesh.SetSubMesh(0, subMesh);
 
             mesh.SetUVs(1, meshData.vertexTypes.AsArray());
+            
+            mesh.SetNormals(meshData.normals.AsArray()); // Set the calculated normals
 
             mesh.RecalculateBounds();
-            mesh.RecalculateNormals();
+            // We no longer need to recalculate normals here!
+            // mesh.RecalculateNormals();
 
             meshFilter.mesh = mesh;
             meshCollider.sharedMesh = mesh;

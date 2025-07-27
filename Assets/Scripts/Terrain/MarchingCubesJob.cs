@@ -18,6 +18,7 @@ public struct MarchingCubesJob : IJob
     // Output mesh data
     [WriteOnly] public NativeList<float3> vertices;
     [WriteOnly] public NativeList<int> triangles;
+    [WriteOnly] public NativeList<float3> normals; 
 
     // Chunk parameters
     public int chunkSize;
@@ -102,6 +103,10 @@ public struct MarchingCubesJob : IJob
                         vertices.Add(vertB_local * scale + nodeMin);
                         vertices.Add(vertC_local * scale + nodeMin);
                         
+                        normals.Add(CalculateNormal(vertA_local));
+                        normals.Add(CalculateNormal(vertB_local));
+                        normals.Add(CalculateNormal(vertC_local));
+                        
                         vertexTypes.Add(typeA);
                         vertexTypes.Add(typeB);
                         vertexTypes.Add(typeC);
@@ -110,9 +115,47 @@ public struct MarchingCubesJob : IJob
                         triangles.Add(numVerts++);
                         triangles.Add(numVerts++);
                     }
+                    cubeDensities.Dispose();
+                    cubeVoxelTypes.Dispose();
                 }
             }
         }
+    }
+    
+    private float3 CalculateNormal(float3 pos)
+    {
+        float d = 0.01f; // A small offset for sampling
+        float nx = SampleDensity(pos + new float3(d, 0, 0)) - SampleDensity(pos - new float3(d, 0, 0));
+        float ny = SampleDensity(pos + new float3(0, d, 0)) - SampleDensity(pos - new float3(0, d, 0));
+        float nz = SampleDensity(pos + new float3(0, 0, d)) - SampleDensity(pos - new float3(0, 0, d));
+        return math.normalize(new float3(nx, ny, nz));
+    }
+    
+    private float SampleDensity(float3 pos)
+    {
+        int3 p0 = (int3)math.floor(pos);
+        int3 p1 = p0 + 1;
+
+        // Ensure within bounds
+        p0 = math.clamp(p0, 0, chunkSize);
+        p1 = math.clamp(p1, 0, chunkSize);
+
+        float d000 = density[CornerToIndex(p0)];
+        float d100 = density[CornerToIndex(new int3(p1.x, p0.y, p0.z))];
+        float d010 = density[CornerToIndex(new int3(p0.x, p1.y, p0.z))];
+        float d110 = density[CornerToIndex(new int3(p1.x, p1.y, p0.z))];
+        float d001 = density[CornerToIndex(new int3(p0.x, p0.y, p1.z))];
+        float d101 = density[CornerToIndex(new int3(p1.x, p0.y, p1.z))];
+        float d011 = density[CornerToIndex(new int3(p0.x, p1.y, p1.z))];
+        float d111 = density[CornerToIndex(p1)];
+
+        float3 t = pos - p0;
+    
+        return math.lerp(
+            math.lerp(math.lerp(d000, d100, t.x), math.lerp(d010, d110, t.x), t.y),
+            math.lerp(math.lerp(d001, d101, t.x), math.lerp(d011, d111, t.x), t.y),
+            t.z
+        );
     }
 
     private int CornerToIndex(int3 pos)
