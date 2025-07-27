@@ -113,33 +113,23 @@ public class TerrainGraphView : GraphView
             });
         }
 
-        // Use reflection to find all static classes ending in "Layer"
-        var layerTypes = TypeCache.GetTypesDerivedFrom<object>()
-            .Where(t => !t.IsAbstract && t.Name.EndsWith("TerrainLayer") && t.Name != "TerrainLayer");
+        // Use the registry to find all registered layer types
+        var layerTypes = TerrainLayerRegistry.GetLayerTypeNames();
 
-        foreach (var type in layerTypes)
+        foreach (var typeName in layerTypes)
         {
-            menu.AppendAction($"Create/{type.Name.Replace("Layer", "")}", (action) =>
+            menu.AppendAction($"Create/{typeName.Replace("Layer", "")}", (action) =>
             {
-                // Assumes a 'Create' method exists to get default properties
-                var createMethod = type.GetMethod("Create", BindingFlags.Public | BindingFlags.Static);
-                var layerInstance = (TerrainLayer)createMethod.Invoke(null, new object[] { default, default });
-
                 var nodeData = new NodeData(
                     Guid.NewGuid().ToString(),
-                    type.Name,
+                    typeName,
                     contentViewContainer.WorldToLocal(action.eventInfo.mousePosition),
                     16 // Default property count from TerrainLayer struct
                 );
                 
-                // Copy default properties from the temporary layer instance
-                for(int i = 0; i < 2; i++) // Example for 2 properties
-                {
-                    unsafe
-                    {
-                        nodeData.properties[i] = layerInstance.properties[i];
-                    }
-                }
+                // Get default properties from the registry
+                var defaultProperties = TerrainLayerRegistry.GetDefaultProperties(typeName);
+                Array.Copy(defaultProperties, nodeData.properties, defaultProperties.Length);
 
                 _graph.nodes.Add(nodeData);
                 CreateNodeView(nodeData);

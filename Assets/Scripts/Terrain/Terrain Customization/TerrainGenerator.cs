@@ -71,28 +71,10 @@ public class TerrainGenerator
 
         return layers;
     }
-
+    
     private TerrainLayer CreateLayerFromNodeData(NodeData data)
     {
-        // Use reflection to find the correct static 'Create' method.
-        var type = Type.GetType(data.layerType);
-        if (type != null)
-        {
-            var createMethod = type.GetMethod("Create", BindingFlags.Public | BindingFlags.Static);
-            if (createMethod != null)
-            {
-                var parameters = createMethod.GetParameters();
-                var args = new object[parameters.Length];
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    // Pass the properties from our node data to the 'Create' method.
-                    args[i] = data.properties[i];
-                }
-                return (TerrainLayer)createMethod.Invoke(null, args);
-            }
-        }
-        
-        throw new Exception($"Could not create terrain layer of type: {data.layerType}");
+        return TerrainLayerRegistry.CreateLayer(data.layerType, data.properties);
     }
 
     public void Dispose()
