@@ -57,13 +57,12 @@ public class TerrainBlocksBuilder : ScriptableObject
             AssetDatabase.CreateFolder(assetDirectory, folderName);
         }
         
-        // --- UPDATED ---
         // The Height array is now generated using DXT5 compression after being converted to a visual grayscale format.
-        AlbedoArray = CreateAndSaveArray("Albedo", folderPath, Blocks.Select(b => b.Albedo).ToList(), TextureFormat.DXT5, false);
+        AlbedoArray = CreateAndSaveArray("Albedo", folderPath, Blocks.Select(b => b.Albedo).ToList(), TextureFormat.DXT1, false);
         NormalArray = CreateAndSaveNormalArray("Normal", folderPath, Blocks.Select(b => b.Normal).ToList());
-        SmoothnessArray = CreateAndSaveArray("Smoothness", folderPath, Blocks.Select(b => b.Smoothness).ToList(), TextureFormat.DXT5, false);
-        AmbientOcclusionArray = CreateAndSaveArray("AmbientOcclusion", folderPath, Blocks.Select(b => b.AmbientOcclusion).ToList(), TextureFormat.DXT5, false);
-        HeightArray = CreateAndSaveArray("Height", folderPath, Blocks.Select(b => b.Height).ToList(), TextureFormat.DXT5, true);
+        SmoothnessArray = CreateAndSaveArray("Smoothness", folderPath, Blocks.Select(b => b.Smoothness).ToList(), TextureFormat.DXT1, false);
+        AmbientOcclusionArray = CreateAndSaveArray("AmbientOcclusion", folderPath, Blocks.Select(b => b.AmbientOcclusion).ToList(), TextureFormat.DXT1, false);
+        HeightArray = CreateAndSaveArray("Height", folderPath, Blocks.Select(b => b.Height).ToList(), TextureFormat.DXT1, true);
 
         EditorUtility.SetDirty(this);
         AssetDatabase.SaveAssets();
@@ -79,7 +78,7 @@ public class TerrainBlocksBuilder : ScriptableObject
     /// </summary>
     private Texture2DArray CreateAndSaveNormalArray(string arrayName, string folderPath, List<Texture2D> textures)
     {
-        Texture2DArray normalArray = CreateAndSaveArray(arrayName, folderPath, textures, TextureFormat.RGBA32, true);
+        Texture2DArray normalArray = CreateAndSaveArray(arrayName, folderPath, textures, TextureFormat.DXT5, true);
 
         if (normalArray != null)
         {
