@@ -684,7 +684,7 @@ MonoBehaviour:
   playerCamera: {fileID: 330585545}
   modificationStrength: 5
   modificationRadius: 5
-  editCoolDown: 0.1
+  editCoolDown: 0.05
   editType: 0
 --- !u!136 &1726203994
 CapsuleCollider:
