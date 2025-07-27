@@ -9,7 +9,7 @@ public static unsafe class PerlinNoiseLayer
 {
     // The Apply method now takes a pointer and length for the density map 
     [BurstCompile]
-    public static void Apply(ref TerrainLayer layer, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
+    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
 
@@ -23,7 +23,10 @@ public static unsafe class PerlinNoiseLayer
             float worldY = offset.y + (y / (float)chunkSize - 0.5f) * scale;
             float worldZ = offset.z + (z / (float)chunkSize - 0.5f) * scale;
 
-            float noiseValue = noise.snoise(new float3(worldX, worldY, worldZ) * layer.noiseScale) * layer.noiseStrength;
+            // Calculate 2D Perlin noise for the heightmap using worldX and worldZ
+            float noiseValue = BurstNoiseGenerator.Perlin(seed, worldX * layer.noiseScale, worldZ * layer.noiseScale) * layer.noiseStrength;
+            
+            // The density is the current world height minus the noise-generated terrain height
             density[i] = worldY - noiseValue;
             
             // Example logic for setting voxel type based on height

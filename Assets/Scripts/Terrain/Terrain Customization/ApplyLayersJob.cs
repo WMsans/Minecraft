@@ -7,6 +7,7 @@ using Unity.Mathematics;
 public struct ApplyLayersJob : IJob
 {
     [ReadOnly] public NativeArray<TerrainLayer> layers;
+    public int seed;
     public NativeArray<float> density;
     public NativeArray<byte> voxelTypes; 
     public int chunkSize;
@@ -21,7 +22,7 @@ public struct ApplyLayersJob : IJob
             if (layer.enabled)
             {
                 // Pass voxelTypes to the layer's Apply method
-                layer.Apply(density, voxelTypes, chunkSize, in offset, scale); 
+                layer.Apply(seed, density, voxelTypes, chunkSize, in offset, scale); 
             }
         }
     }

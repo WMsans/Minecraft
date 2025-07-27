@@ -1,5 +1,7 @@
+using Unity.Burst;
 using Unity.Mathematics;
 
+[BurstCompile]
 public static class MarchingCubesTables
 {
     // The 8 corners of a cube

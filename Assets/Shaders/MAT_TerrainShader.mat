@@ -57,6 +57,7 @@ Material:
     - _BlendSharpness: 0.2
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _Scale: 2
     - _Smoothness: 0
     m_Colors: []
   m_BuildTextureStacks: []

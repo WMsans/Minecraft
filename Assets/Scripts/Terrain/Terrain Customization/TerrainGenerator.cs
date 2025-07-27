@@ -23,6 +23,7 @@ public class TerrainGenerator
     {
         var job = new ApplyLayersJob
         {
+            seed = SeedController.Seed,
             layers = layersArray,
             density = density,
             voxelTypes = voxelTypes,
