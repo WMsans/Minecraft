@@ -114,7 +114,7 @@ public class TerrainGraphView : GraphView
         }
 
         // Use the registry to find all registered layer types
-        var layerTypes = TerrainLayerRegistry.GetLayerTypeNames();
+        var layerTypes = TerrainLayerRegistry.Instance.GetLayerTypeNames();
 
         foreach (var typeName in layerTypes)
         {
@@ -128,7 +128,7 @@ public class TerrainGraphView : GraphView
                 );
                 
                 // Get default properties from the registry
-                var defaultProperties = TerrainLayerRegistry.GetDefaultProperties(typeName);
+                var defaultProperties = TerrainLayerRegistry.Instance.GetDefaultProperties(typeName);
                 Array.Copy(defaultProperties, nodeData.properties, defaultProperties.Length);
 
                 _graph.nodes.Add(nodeData);

@@ -74,7 +74,7 @@ public class TerrainGenerator
     
     private TerrainLayer CreateLayerFromNodeData(NodeData data)
     {
-        return TerrainLayerRegistry.CreateLayer(data.layerType, data.properties);
+        return TerrainLayerRegistry.Instance.CreateLayer(data.layerType, data.properties);
     }
 
     public void Dispose()

@@ -1,20 +1,55 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
-public static class TerrainLayerRegistry
+[CreateAssetMenu]
+public class TerrainLayerRegistry : ScriptableObject
 {
+    private static TerrainLayerRegistry instance;
+
+    public static TerrainLayerRegistry Instance
+    {
+        get
+        {
+            if (instance) return instance;
+            instance = Resources.Load<TerrainLayerRegistry>("TerrainLayerRegistry");
+            if (!instance)
+            {
+                Debug.LogError("Cannot find TerrainLayerRegistry in resources folder");
+                return null;
+            }
+
+            return instance;
+        }
+    }
+
     public delegate TerrainLayer CreateTerrainLayerDelegate(params float[] properties);
 
-    private static readonly Dictionary<string, CreateTerrainLayerDelegate> _layerCreators = new Dictionary<string, CreateTerrainLayerDelegate>();
-    private static readonly Dictionary<string, float[]> _defaultProperties = new Dictionary<string, float[]>();
+    private readonly Dictionary<string, CreateTerrainLayerDelegate> _layerCreators = new Dictionary<string, CreateTerrainLayerDelegate>();
+    private readonly Dictionary<string, float[]> _defaultProperties = new Dictionary<string, float[]>();
 
-    public static void Register(string layerTypeName, CreateTerrainLayerDelegate creator, float[] defaultProperties)
+    [VInspector.Button]
+    public void FindAndRegisterLayers()
+    {
+        var layerTypes = TypeCache.GetTypesDerivedFrom<ITerrainLayer>().Where(t => !t.IsAbstract);
+        foreach (var type in layerTypes)
+        {
+            var registerMethod = type.GetMethod("Register", BindingFlags.Public | BindingFlags.Static);
+            registerMethod.Invoke(null, new object[] { });
+        }
+        Debug.Log("Successfully registered " + layerTypes.Count() + " layer types: ");
+    }
+
+    public void Register(string layerTypeName, CreateTerrainLayerDelegate creator, float[] defaultProperties)
     {
         _layerCreators[layerTypeName] = creator;
         _defaultProperties[layerTypeName] = defaultProperties;
     }
 
-    public static TerrainLayer CreateLayer(string layerTypeName, params float[] properties)
+    public TerrainLayer CreateLayer(string layerTypeName, params float[] properties)
     {
         if (_layerCreators.TryGetValue(layerTypeName, out var creator))
         {
@@ -27,7 +62,7 @@ public static class TerrainLayerRegistry
         throw new Exception($"Unknown terrain layer type: {layerTypeName}");
     }
     
-    public static float[] GetDefaultProperties(string layerTypeName)
+    public float[] GetDefaultProperties(string layerTypeName)
     {
         if (_defaultProperties.TryGetValue(layerTypeName, out var properties))
         {
@@ -36,7 +71,7 @@ public static class TerrainLayerRegistry
         return new float[16];
     }
 
-    public static IEnumerable<string> GetLayerTypeNames()
+    public IEnumerable<string> GetLayerTypeNames()
     {
         return _layerCreators.Keys;
     }

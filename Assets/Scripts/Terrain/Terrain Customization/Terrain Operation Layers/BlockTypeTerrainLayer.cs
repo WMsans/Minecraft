@@ -3,16 +3,15 @@ using Unity.Mathematics;
 using UnityEngine;
 
 [BurstCompile]
-public unsafe struct BlockTypeTerrainLayer
+public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
 {
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-    private static void Register()
+    public static void Register()
     {
         var defaultLayer = Create();
         var defaultProps = new float[2];
         defaultProps[0] = defaultLayer.properties[0];
         defaultProps[1] = defaultLayer.properties[1];
-        TerrainLayerRegistry.Register(nameof(BlockTypeTerrainLayer), Create, defaultProps);
+        TerrainLayerRegistry.Instance.Register(nameof(BlockTypeTerrainLayer), Create, defaultProps); 
     }
 
     [BurstCompile]
