@@ -15,6 +15,7 @@ public class OctreeTerrainManager : MonoBehaviour
     public Camera mainCamera;
     public int maxDepth = 2;
     public float nodeSize = 64;
+    public TerrainGraph terrainGraph;
     [Header("Chunk Settings")]
     public Chunk chunkPrefab;
 
@@ -85,8 +86,7 @@ public class OctreeTerrainManager : MonoBehaviour
         generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
-        terrainGenerator = new TerrainGenerator();
-        terrainGenerator.Initialize();
+        terrainGenerator = new TerrainGenerator(terrainGraph);
 
         terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
     }

@@ -1,17 +1,19 @@
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 
 [BurstCompile]
-public static unsafe class PerlinNoiseLayer
+public unsafe struct PerlinNoiseTerrainLayer
 {
-    // The Apply method now takes a pointer and length for the density map 
     [BurstCompile]
     public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
+
+        // Get properties from the layer struct
+        float noiseScale = layer.properties[0];
+        float noiseStrength = layer.properties[1];
 
         for (int i = 0; i < densityLength; i++)
         {
@@ -23,22 +25,24 @@ public static unsafe class PerlinNoiseLayer
             float worldY = offset.y + (y / (float)chunkSize - 0.5f) * scale;
             float worldZ = offset.z + (z / (float)chunkSize - 0.5f) * scale;
 
-            // Calculate 2D Perlin noise for the heightmap using worldX and worldZ
-            float noiseValue = BurstNoiseGenerator.Perlin(seed, worldX * layer.noiseScale, worldZ * layer.noiseScale) * layer.noiseStrength;
-            
-            // The density is the current world height minus the noise-generated terrain height
+            float noiseValue = BurstNoiseGenerator.Perlin(seed, worldX * noiseScale, worldZ * noiseScale) * noiseStrength;
+
             density[i] = worldY - noiseValue;
         }
     }
 
-    public static TerrainLayer Create()
+    public static TerrainLayer Create(float noiseScale = 0.05f, float noiseStrength = 10f)
     {
-        return new TerrainLayer
+        var layer = new TerrainLayer
         {
             ApplyFunction = BurstCompiler.CompileFunctionPointer<TerrainLayer.ApplyDelegate>(Apply),
             enabled = true,
-            noiseScale = 0.05f,
-            noiseStrength = 10f
         };
+
+        // Set the properties for this layer
+        layer.properties[0] = noiseScale;
+        layer.properties[1] = noiseStrength;
+
+        return layer;
     }
 }
