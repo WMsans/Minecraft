@@ -56,11 +56,13 @@ public class TerrainBlocksBuilder : ScriptableObject
             AssetDatabase.CreateFolder(assetDirectory, folderName);
         }
 
-        // Generate each texture array
-        AlbedoArray = CreateAndSaveArray("Albedo", folderPath, Blocks.Select(b => b.Albedo).ToList(), TextureFormat.DXT5);
-        NormalArray = CreateAndSaveArray("Normal", folderPath, Blocks.Select(b => b.Normal).ToList(), TextureFormat.RGBA32, true);
-        SmoothnessArray = CreateAndSaveArray("Smoothness", folderPath, Blocks.Select(b => b.Smoothness).ToList(), TextureFormat.BC4);
-        AmbientOcclusionArray = CreateAndSaveArray("AmbientOcclusion", folderPath, Blocks.Select(b => b.AmbientOcclusion).ToList(), TextureFormat.BC4);
+        // --- FIX ---
+        // Changed Normal map creation to call a new specialized function.
+        // Changed format for Smoothness and AO from BC4 to DXT5 to avoid single-channel issues.
+        AlbedoArray = CreateAndSaveArray("Albedo", folderPath, Blocks.Select(b => b.Albedo).ToList(), TextureFormat.DXT5, false);
+        NormalArray = CreateAndSaveNormalArray("Normal", folderPath, Blocks.Select(b => b.Normal).ToList());
+        SmoothnessArray = CreateAndSaveArray("Smoothness", folderPath, Blocks.Select(b => b.Smoothness).ToList(), TextureFormat.DXT5, false);
+        AmbientOcclusionArray = CreateAndSaveArray("AmbientOcclusion", folderPath, Blocks.Select(b => b.AmbientOcclusion).ToList(), TextureFormat.DXT5, false);
 
         // Mark the ScriptableObject as dirty to save the changes
         EditorUtility.SetDirty(this);
@@ -72,6 +74,30 @@ public class TerrainBlocksBuilder : ScriptableObject
     }
 
 #if UNITY_EDITOR
+    /// <summary>
+    /// Specialized function to create and save a Normal Map Texture2DArray.
+    /// It ensures the created asset is imported correctly as a normal map.
+    /// </summary>
+    private Texture2DArray CreateAndSaveNormalArray(string arrayName, string folderPath, List<Texture2D> textures)
+    {
+        // For normal maps, we use an uncompressed format for quality and set linear to true.
+        Texture2DArray normalArray = CreateAndSaveArray(arrayName, folderPath, textures, TextureFormat.RGBA32, true);
+
+        if (normalArray != null)
+        {
+            // After creating the asset, we must get its importer and set the type to NormalMap.
+            string arrayPath = AssetDatabase.GetAssetPath(normalArray);
+            var importer = AssetImporter.GetAtPath(arrayPath) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.NormalMap;
+                importer.SaveAndReimport(); // Apply the new import settings
+                return AssetDatabase.LoadAssetAtPath<Texture2DArray>(arrayPath);
+            }
+        }
+        return normalArray;
+    }
+
     private Texture2DArray CreateAndSaveArray(string arrayName, string folderPath, List<Texture2D> textures, TextureFormat format, bool linear = false)
     {
         if (textures.Any(t => t == null))
