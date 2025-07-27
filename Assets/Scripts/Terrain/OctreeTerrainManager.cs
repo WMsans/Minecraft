@@ -15,7 +15,7 @@ public class OctreeTerrainManager : MonoBehaviour
     public Camera mainCamera;
     public int maxDepth = 2;
     public float nodeSize = 64;
-    [Header("Chunk Settings")] 
+    [Header("Chunk Settings")]
     public Chunk chunkPrefab;
 
     private NativeList<OctreeNode> nodes;
@@ -25,14 +25,13 @@ public class OctreeTerrainManager : MonoBehaviour
     private TerrainGenerator terrainGenerator;
 
     private Dictionary<int, (JobHandle jobHandle, Chunk chunk, Chunk.MeshData meshData)> generationJobs;
-    private JobHandle applyModificationsHandle; // Added to track modification jobs
+    private JobHandle applyModificationsHandle;
 
     public NativeArray<int> triangulationTable;
     public NativeArray<int3> cornerOffsets;
     public NativeArray<int> cornerIndexAFromEdge;
     public NativeArray<int> cornerIndexBFromEdge;
-    
-    // Struct to hold modification data
+
     public struct TerrainModification
     {
         public float3 worldPos;
@@ -40,10 +39,17 @@ public class OctreeTerrainManager : MonoBehaviour
         public float radius;
         public byte newVoxelType;
     }
-    // List of all modifications made
     private NativeList<TerrainModification> terrainModifications;
-    
+
     private Dictionary<int, ChunkData> activeChunkData;
+
+    // Dictionary to track children that need to be destroyed after a parent merge is complete.
+    // Key: parent node index, Value: children start index
+    private Dictionary<int, int> pendingMergeCleanup = new Dictionary<int, int>();
+
+    // Dictionary to track the parent of new children from a subdivision.
+    // Key: child node index, Value: parent node index
+    private Dictionary<int, int> subdivisionParentMap = new Dictionary<int, int>();
 
     private void Awake()
     {
@@ -75,13 +81,13 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         nodes = new NativeList<OctreeNode>(Allocator.Persistent);
         activeChunks = new Dictionary<int, Chunk>();
-        activeChunkData = new Dictionary<int, ChunkData>(); 
+        activeChunkData = new Dictionary<int, ChunkData>();
         generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
         terrainGenerator = new TerrainGenerator();
         terrainGenerator.Initialize();
-        
+
         terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
     }
 
@@ -95,7 +101,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        applyModificationsHandle.Complete(); // Complete handle on destroy
+        applyModificationsHandle.Complete();
         foreach (var genJob in generationJobs.Values)
         {
             genJob.jobHandle.Complete();
@@ -103,7 +109,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }
         generationJobs.Clear();
 
-        foreach(var data in activeChunkData.Values)
+        foreach (var data in activeChunkData.Values)
         {
             data.Dispose();
         }
@@ -115,7 +121,7 @@ public class OctreeTerrainManager : MonoBehaviour
         if (cornerIndexAFromEdge.IsCreated) cornerIndexAFromEdge.Dispose();
         if (cornerIndexBFromEdge.IsCreated) cornerIndexBFromEdge.Dispose();
         if (terrainModifications.IsCreated) terrainModifications.Dispose();
-        
+
         terrainGenerator.Dispose();
     }
 
@@ -183,8 +189,56 @@ public class OctreeTerrainManager : MonoBehaviour
                 chunkPool.Return(chunk);
             }
             
-            // The data is now on the GPU, we can dispose of it.
-            if(activeChunkData.TryGetValue(index, out var chunkData))
+            // Cleanup Case 1: A child of a subdivision finished generating.
+            if (subdivisionParentMap.TryGetValue(index, out int parentNodeIndex))
+            {
+                // The parent chunk is now obsolete. Destroy it.
+                DestroyChunk(parentNodeIndex);
+
+                // Remove all sibling mappings to prevent this from running multiple times.
+                var parentNode = nodes[parentNodeIndex];
+                if (parentNode.childrenIndex != -1)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        subdivisionParentMap.Remove(parentNode.childrenIndex + i);
+                    }
+                }
+            }
+
+            // Cleanup Case 2: A parent of a merge finished generating.
+            if (pendingMergeCleanup.TryGetValue(index, out int childrenIndexToDestroy))
+            {
+                // The parent chunk is now visible. Destroy the obsolete children.
+                var stack = new Stack<int>();
+                if (childrenIndexToDestroy != -1)
+                {
+                    stack.Push(childrenIndexToDestroy);
+                }
+
+                while (stack.Count > 0)
+                {
+                    int currentIndex = stack.Pop();
+                    for (int i = 0; i < 8; i++)
+                    {
+                        var childNode = nodes[currentIndex + i];
+                        if (!childNode.isLeaf)
+                        {
+                            stack.Push(childNode.childrenIndex);
+                        }
+                        DestroyChunk(currentIndex + i);
+                    }
+                }
+
+                // Finalize the node state.
+                var node = nodes[index];
+                node.childrenIndex = -1;
+                nodes[index] = node;
+
+                pendingMergeCleanup.Remove(index);
+            }
+
+            if (activeChunkData.TryGetValue(index, out var chunkData))
             {
                 chunkData.Dispose();
                 activeChunkData.Remove(index);
@@ -195,7 +249,9 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void Subdivide(int nodeIndex)
     {
-        DestroyChunk(nodeIndex);
+        // We DO NOT destroy the parent chunk here. It will be destroyed in
+        // ProcessCompletedJobs once its children are ready.
+        // DestroyChunk(nodeIndex);
 
         var node = nodes[nodeIndex];
         node.isLeaf = false;
@@ -212,6 +268,11 @@ public class OctreeTerrainManager : MonoBehaviour
                 ((i & 4) == 0 ? -offset : offset),
                 ((i & 2) == 0 ? -offset : offset)
             );
+
+            int childNodeIndex = nodes.Length;
+            // Map the new child to its parent for cleanup after generation.
+            subdivisionParentMap[childNodeIndex] = nodeIndex;
+
             nodes.Add(new OctreeNode(new Bounds(node.bounds.center + centerOffset, new Vector3(childSize, childSize, childSize)), node.depth + 1));
         }
     }
@@ -220,32 +281,18 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         var node = nodes[nodeIndex];
         if (node.isLeaf || node.childrenIndex < 0) return;
-        
-        var stack = new Stack<int>();
-        stack.Push(node.childrenIndex);
 
-        while (stack.Count > 0)
-        {
-            int currentIndex = stack.Pop();
-            for(int i = 0; i < 8; i++)
-            {
-                var childNode = nodes[currentIndex + i];
-                if(!childNode.isLeaf)
-                {
-                    stack.Push(childNode.childrenIndex);
-                }
-                DestroyChunk(currentIndex + i);
-            }
-        }
+        // The children are NOT destroyed here. They remain visible.
+        // First, we generate the new parent chunk.
+        GenerateChunk(nodeIndex);
 
+        // Defer the destruction of the children until the parent is ready.
+        // We store the parent's index and its children's start index for cleanup.
+        pendingMergeCleanup[nodeIndex] = node.childrenIndex;
+
+        // Mark the node as a leaf, but don't clear childrenIndex yet.
         node.isLeaf = true;
-        node.childrenIndex = -1;
         nodes[nodeIndex] = node;
-        
-        if (FrustumCulling.TestAABB(FrustumCulling.GetFrustumPlanes(mainCamera), node.bounds))
-        {
-            GenerateChunk(nodeIndex);
-        }
     }
 
     private void GenerateChunk(int nodeIndex)
@@ -265,7 +312,7 @@ public class OctreeTerrainManager : MonoBehaviour
             activeChunkData[nodeIndex] = chunkData;
 
             var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
-            
+
             var applyModsJob = new ApplyModificationsJob
             {
                 modifications = this.terrainModifications,
@@ -276,7 +323,6 @@ public class OctreeTerrainManager : MonoBehaviour
             };
             var applyModsHandle = applyModsJob.Schedule(applyLayersHandle);
 
-            // Combine the handle with the global modification handle
             applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
 
             var newChunk = chunkPool.Get();
@@ -307,7 +353,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
-            chunk.ClearMesh(); // Ensure the mesh is cleared
+            chunk.ClearMesh();
             chunkPool.Return(chunk);
             activeChunks.Remove(nodeIndex);
         }
@@ -333,11 +379,10 @@ public class OctreeTerrainManager : MonoBehaviour
         Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
         List<int> modifiedNodeIndices = new List<int>();
 
-        // Traverse the octree to find intersecting leaf nodes
         var stack = new Stack<int>();
         if (nodes.Length > 0)
         {
-            stack.Push(0); // Start from the root
+            stack.Push(0);
         }
 
         while (stack.Count > 0)
@@ -354,7 +399,7 @@ public class OctreeTerrainManager : MonoBehaviour
             {
                 modifiedNodeIndices.Add(nodeIndex);
             }
-            else if(node.childrenIndex != -1)
+            else if (node.childrenIndex != -1)
             {
                 for (int i = 0; i < 8; i++)
                 {
@@ -364,32 +409,25 @@ public class OctreeTerrainManager : MonoBehaviour
         }
 
 
-        foreach(var index in modifiedNodeIndices)
+        foreach (var index in modifiedNodeIndices)
         {
             RegenerateChunk(index);
         }
     }
-    
+
     private void RegenerateChunk(int nodeIndex)
     {
-        // If a job is already running for this chunk, let it finish.
-        // Or, if you want the newest edit to always take priority, you could cancel the old job.
-        // For now, we'll just return to prevent scheduling multiple jobs.
         if (generationJobs.ContainsKey(nodeIndex))
         {
             return;
         }
 
-        // We must have an active chunk to regenerate without flashing.
         if (!activeChunks.TryGetValue(nodeIndex, out Chunk chunkToUpdate))
         {
-            // This can happen if we try to modify a chunk that isn't
-            // currently visible/active. In this case, we can just generate it.
             GenerateChunk(nodeIndex);
             return;
         }
 
-        // Clean up any old data associated with a previous job for this chunk
         if (activeChunkData.TryGetValue(nodeIndex, out var oldData))
         {
             oldData.Dispose();
@@ -398,14 +436,12 @@ public class OctreeTerrainManager : MonoBehaviour
 
         var node = nodes[nodeIndex];
 
-        // Allocate new data containers for the job
         var chunkData = new ChunkData();
         chunkData.Allocate();
         activeChunkData[nodeIndex] = chunkData;
 
-        // Schedule the jobs to generate the new density and voxel data
         var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
-    
+
         var applyModsJob = new ApplyModificationsJob
         {
             modifications = this.terrainModifications,
@@ -418,11 +454,8 @@ public class OctreeTerrainManager : MonoBehaviour
 
         applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
 
-        // Schedule the final mesh generation job.
-        // We crucially associate this job with the *existing, visible* chunk.
         var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
-        
-        // Add the job to our tracking dictionary. ProcessCompletedJobs will handle applying the mesh.
+
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
 
