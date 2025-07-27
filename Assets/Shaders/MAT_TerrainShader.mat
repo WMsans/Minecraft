@@ -92,8 +92,8 @@ Material:
     - _NormalStrenth: 178.92
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _Scale: 15
-    - _Smoothness: 0.45
+    - _Scale: 20
+    - _Smoothness: 0.3
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

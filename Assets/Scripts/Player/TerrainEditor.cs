@@ -6,6 +6,7 @@ public class TerrainEditor : MonoBehaviour
     public float modificationStrength = 5f;
     public float modificationRadius = 2f;
     public float editCoolDown;
+    public byte editType;
     private float lastEditTime;
 
     void Update()
@@ -25,7 +26,7 @@ public class TerrainEditor : MonoBehaviour
         Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit)) return;
         float strength = dig ? -modificationStrength : modificationStrength;
-        OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius, 2);
+        OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius, editType);
         lastEditTime = Time.time;
     }
 
