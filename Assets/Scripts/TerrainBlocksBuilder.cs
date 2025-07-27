@@ -20,6 +20,8 @@ public class TerrainBlocksBuilder : ScriptableObject
         public Texture2D Normal;
         public Texture2D Smoothness;
         public Texture2D AmbientOcclusion;
+        [Tooltip("Height map for displacement or parallax effects. Grayscale data is read from the Red channel.")]
+        public Texture2D Height;
     }
 
     [Header("Source Textures")]
@@ -31,9 +33,10 @@ public class TerrainBlocksBuilder : ScriptableObject
     public Texture2DArray NormalArray;
     public Texture2DArray SmoothnessArray;
     public Texture2DArray AmbientOcclusionArray;
+    public Texture2DArray HeightArray;
 
     /// <summary>
-    /// Generates the Texture2DArrays for Albedo, Normal, Roughness, and Ambient Occlusion.
+    /// Generates the Texture2DArrays for all defined map types.
     /// </summary>
     public void GenerateTextureArrays()
     {
@@ -44,27 +47,24 @@ public class TerrainBlocksBuilder : ScriptableObject
             return;
         }
 
-        // Get the path of the ScriptableObject asset
         string assetPath = AssetDatabase.GetAssetPath(this);
         string assetDirectory = Path.GetDirectoryName(assetPath);
         string folderName = $"{this.name}_GeneratedArrays";
         string folderPath = Path.Combine(assetDirectory, folderName);
 
-        // Create a subfolder for the generated arrays if it doesn't exist
         if (!AssetDatabase.IsValidFolder(folderPath))
         {
             AssetDatabase.CreateFolder(assetDirectory, folderName);
         }
-
-        // --- FIX ---
-        // Changed Normal map creation to call a new specialized function.
-        // Changed format for Smoothness and AO from BC4 to DXT5 to avoid single-channel issues.
+        
+        // --- UPDATED ---
+        // The Height array is now generated using DXT5 compression after being converted to a visual grayscale format.
         AlbedoArray = CreateAndSaveArray("Albedo", folderPath, Blocks.Select(b => b.Albedo).ToList(), TextureFormat.DXT5, false);
         NormalArray = CreateAndSaveNormalArray("Normal", folderPath, Blocks.Select(b => b.Normal).ToList());
         SmoothnessArray = CreateAndSaveArray("Smoothness", folderPath, Blocks.Select(b => b.Smoothness).ToList(), TextureFormat.DXT5, false);
         AmbientOcclusionArray = CreateAndSaveArray("AmbientOcclusion", folderPath, Blocks.Select(b => b.AmbientOcclusion).ToList(), TextureFormat.DXT5, false);
+        HeightArray = CreateAndSaveArray("Height", folderPath, Blocks.Select(b => b.Height).ToList(), TextureFormat.DXT5, true);
 
-        // Mark the ScriptableObject as dirty to save the changes
         EditorUtility.SetDirty(this);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -76,28 +76,28 @@ public class TerrainBlocksBuilder : ScriptableObject
 #if UNITY_EDITOR
     /// <summary>
     /// Specialized function to create and save a Normal Map Texture2DArray.
-    /// It ensures the created asset is imported correctly as a normal map.
     /// </summary>
     private Texture2DArray CreateAndSaveNormalArray(string arrayName, string folderPath, List<Texture2D> textures)
     {
-        // For normal maps, we use an uncompressed format for quality and set linear to true.
         Texture2DArray normalArray = CreateAndSaveArray(arrayName, folderPath, textures, TextureFormat.RGBA32, true);
 
         if (normalArray != null)
         {
-            // After creating the asset, we must get its importer and set the type to NormalMap.
             string arrayPath = AssetDatabase.GetAssetPath(normalArray);
             var importer = AssetImporter.GetAtPath(arrayPath) as TextureImporter;
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.NormalMap;
-                importer.SaveAndReimport(); // Apply the new import settings
+                importer.SaveAndReimport();
                 return AssetDatabase.LoadAssetAtPath<Texture2DArray>(arrayPath);
             }
         }
         return normalArray;
     }
 
+    /// <summary>
+    /// Creates a Texture2DArray from a list of textures, saves it as an asset, and returns it.
+    /// </summary>
     private Texture2DArray CreateAndSaveArray(string arrayName, string folderPath, List<Texture2D> textures, TextureFormat format, bool linear = false)
     {
         if (textures.Any(t => t == null))
@@ -106,26 +106,62 @@ public class TerrainBlocksBuilder : ScriptableObject
             return null;
         }
 
-        // Find the smallest resolution
         int minWidth = textures.Min(t => t.width);
         int minHeight = textures.Min(t => t.height);
 
-        // Ensure all textures are readable and resize them to the smallest resolution
-        List<Texture2D> resizedTextures = new List<Texture2D>();
+        var processedTextures = new List<Texture2D>();
         foreach (var texture in textures)
         {
             TextureUtilities.SetReadable(texture);
+            Texture2D processedTex = texture;
+
             if (texture.width != minWidth || texture.height != minHeight)
             {
-                resizedTextures.Add(TextureUtilities.ResizeTexture(texture, minWidth, minHeight));
+                processedTex = TextureUtilities.ResizeTexture(texture, minWidth, minHeight);
             }
-            else
+
+            // --- FIX ---
+            // If creating the "Height" array, this logic converts the source texture into a visually grayscale
+            // RGBA texture. This makes it easier to preview in the editor.
+            if (arrayName == "Height")
             {
-                resizedTextures.Add(texture);
+                // Create a temporary RGBA32 texture to store the new pixel data.
+                var grayscaleTexture = new Texture2D(processedTex.width, processedTex.height, TextureFormat.RGBA32, false, linear);
+                
+                Color32[] sourcePixels = processedTex.GetPixels32();
+                var newPixels = new Color32[sourcePixels.Length];
+                
+                // Copy the value from the red channel of the source into the R, G, and B channels of the destination.
+                for (int i = 0; i < sourcePixels.Length; i++)
+                {
+                    byte grayValue = sourcePixels[i].r;
+                    newPixels[i] = new Color32(grayValue, grayValue, grayValue, 255);
+                }
+                
+                grayscaleTexture.SetPixels32(newPixels);
+                grayscaleTexture.Apply();
+                
+                // If the source was a temporary resized texture, destroy it now to free memory.
+                if(processedTex != texture) DestroyImmediate(processedTex);
+                
+                processedTex = grayscaleTexture;
             }
+            // --- END FIX ---
+
+            processedTextures.Add(processedTex);
         }
 
-        Texture2DArray textureArray = Texture2DArrayUtilities.CreateArray(resizedTextures.ToArray(), format, true, linear);
+        // Create the final texture array using the processed textures.
+        Texture2DArray textureArray = Texture2DArrayUtilities.CreateArray(processedTextures.ToArray(), format, true, linear);
+
+        // Clean up temporary textures that were created during processing.
+        foreach (var tex in processedTextures)
+        {
+            if (!textures.Contains(tex))
+            {
+                DestroyImmediate(tex);
+            }
+        }
 
         if (textureArray != null)
         {
