@@ -10,15 +10,21 @@ public class TerrainGraphEditor : Editor
         var container = new VisualElement();
         var graph = (TerrainGraph)target;
 
-        var button = new Button(() =>
+        var openButton = new Button(() =>
         {
             var window = EditorWindow.GetWindow<TerrainGraphWindow>();
             window.titleContent = new GUIContent("Terrain Graph");
             window.Initialize(graph);
         });
-
-        button.text = "Open Terrain Graph";
-        container.Add(button);
+        openButton.text = "Open Terrain Graph";
+        container.Add(openButton);
+        
+        var registerButton = new Button(() =>
+        {
+            graph.FindAndRegisterLayers();
+        });
+        registerButton.text = "Register Layers";
+        container.Add(registerButton);
 
         return container;
     }

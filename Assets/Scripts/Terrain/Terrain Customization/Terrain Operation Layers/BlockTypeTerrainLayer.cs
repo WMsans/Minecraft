@@ -5,17 +5,8 @@ using UnityEngine;
 [BurstCompile]
 public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
 {
-    public static void Register()
-    {
-        var defaultLayer = Create();
-        var defaultProps = new float[2];
-        defaultProps[0] = defaultLayer.properties[0];
-        defaultProps[1] = defaultLayer.properties[1];
-        TerrainLayerRegistry.Instance.Register(nameof(BlockTypeTerrainLayer), Create, Fields(), defaultProps); 
-    }
-
     [BurstCompile]
-    private static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
+    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
 
@@ -46,7 +37,7 @@ public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
         }
     }
 
-    private static TerrainLayer Create(params float[] properties)
+    public static TerrainLayer Create(params float[] properties)
     {
         float stoneLevel = -20f;
         float dirtLevel = -10f;
@@ -60,7 +51,7 @@ public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
         return Create(stoneLevel, dirtLevel);
     }
 
-    private static TerrainLayer Create(float stoneLevel = -20f, float dirtLevel = -10f)
+    public static TerrainLayer Create(float stoneLevel = -20f, float dirtLevel = -10f)
     {
         var layer = new TerrainLayer
         {
@@ -74,5 +65,5 @@ public unsafe struct BlockTypeTerrainLayer : ITerrainLayer
 
         return layer;
     }
-    private static string[] Fields() => new[] { "Stone Level", "Dirt Level" };
+    public static string[] Fields() => new[] { "Stone Level", "Dirt Level" };
 }

@@ -6,15 +6,6 @@ using UnityEngine;
 [BurstCompile]
 public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
 {
-    public static void Register()
-    {
-        var defaultLayer = Create();
-        var defaultProps = new float[2];
-        defaultProps[0] = defaultLayer.properties[0];
-        defaultProps[1] = defaultLayer.properties[1];
-        TerrainLayerRegistry.Instance.Register(nameof(PerlinNoiseTerrainLayer), Create, Fields(), defaultProps); 
-    }
-
     [BurstCompile]
     public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
     {
@@ -40,7 +31,7 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
         }
     }
 
-    private static TerrainLayer Create(params float[] properties)
+    public static TerrainLayer Create(params float[] properties)
     {
         float noiseScale = 0.05f;
         float noiseStrength = 10f;
@@ -53,7 +44,7 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
         return Create(noiseScale, noiseStrength);
     }
 
-    private static TerrainLayer Create(float noiseScale = 0.05f, float noiseStrength = 10f)
+    public static TerrainLayer Create(float noiseScale = 0.05f, float noiseStrength = 10f)
     {
         var layer = new TerrainLayer
         {
@@ -68,5 +59,5 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
         return layer;
     }
 
-    private static string[] Fields() => new[] { "Noise Scale", "Noise Strength" };
+    public static string[] Fields() => new[] { "Noise Scale", "Noise Strength" };
 }

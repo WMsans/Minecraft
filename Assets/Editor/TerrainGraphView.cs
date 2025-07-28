@@ -114,11 +114,12 @@ public class TerrainGraphView : GraphView
         }
 
         // Use the registry to find all registered layer types
-        var layerTypes = TerrainLayerRegistry.Instance.GetLayerTypeNames();
+        var layerTypes = _graph.GetLayerTypeNames();
 
         foreach (var typeName in layerTypes)
         {
-            menu.AppendAction($"Create/{typeName.Replace("Layer", "")}", (action) =>
+            var friendlyName = typeName.Split(',')[0].Split('.').Last();
+            menu.AppendAction($"Create/{friendlyName.Replace("Layer", "")}", (action) =>
             {
                 var nodeData = new NodeData(
                     Guid.NewGuid().ToString(),
@@ -128,7 +129,7 @@ public class TerrainGraphView : GraphView
                 );
                 
                 // Get default properties from the registry
-                var defaultProperties = TerrainLayerRegistry.Instance.GetDefaultProperties(typeName);
+                var defaultProperties = _graph.GetDefaultProperties(typeName);
                 Array.Copy(defaultProperties, nodeData.properties, defaultProperties.Length);
 
                 _graph.nodes.Add(nodeData);
@@ -139,7 +140,7 @@ public class TerrainGraphView : GraphView
 
     private void CreateNodeView(NodeData nodeData)
     {
-        var nodeView = new GraphNode(nodeData);
+        var nodeView = new GraphNode(nodeData, _graph);
         AddElement(nodeView);
     }
 

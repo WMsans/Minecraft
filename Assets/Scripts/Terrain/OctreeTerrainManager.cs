@@ -64,7 +64,6 @@ public class OctreeTerrainManager : MonoBehaviour
             Destroy(this);
         }
 
-        TerrainLayerRegistry.Instance.FindAndRegisterLayers();
         terrainGenerator = new TerrainGenerator(terrainGraph);
 
         chunkPool = new Pool<Chunk>(() =>

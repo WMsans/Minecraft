@@ -10,9 +10,11 @@ using UnityEngine;
 public class TerrainGenerator
 {
     private NativeArray<TerrainLayer> _layersArray;
+    private readonly TerrainGraph _graph;
 
     public TerrainGenerator(TerrainGraph graph)
     {
+        _graph = graph;
         Initialize(graph);
     }
 
@@ -33,7 +35,6 @@ public class TerrainGenerator
         var layers = new List<TerrainLayer>();
         if (graph.rootNode == null && graph.nodes.Any())
         {
-             // Fallback to the first node if no root is explicitly set.
             graph.rootNode = graph.nodes[0];
             Debug.LogWarning("TerrainGraph has no root node. Falling back to the first node in the list.");
         }
@@ -74,7 +75,7 @@ public class TerrainGenerator
     
     private TerrainLayer CreateLayerFromNodeData(NodeData data)
     {
-        return TerrainLayerRegistry.Instance.CreateLayer(data.layerType, data.properties);
+        return _graph.CreateLayer(data.layerType, data.properties);
     }
 
     public void Dispose()

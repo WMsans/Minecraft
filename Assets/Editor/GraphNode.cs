@@ -1,16 +1,20 @@
 using UnityEditor.Experimental.GraphView;
 using UnityEngine.UIElements;
+using System.Linq;
 
 public class GraphNode : Node
 {
     public NodeData Data { get; }
     public Port inputPort;
     public Port outputPort;
+    private readonly TerrainGraph _graph;
 
-    public GraphNode(NodeData data) : base()
+    public GraphNode(NodeData data, TerrainGraph graph) : base()
     {
         this.Data = data;
-        this.title = data.layerType.Replace("Layer", " ");
+        this._graph = graph;
+        var friendlyName = data.layerType.Split(',')[0].Split('.').Last();
+        this.title = friendlyName.Replace("Layer", " ");
         this.viewDataKey = data.guid;
 
         style.left = data.position.x;
@@ -33,7 +37,8 @@ public class GraphNode : Node
     // New method to update the node's title to indicate if it's the root
     public void SetAsRoot(bool isRoot)
     {
-        title = Data.layerType.Replace("Layer", " ");
+        var friendlyName = Data.layerType.Split(',')[0].Split('.').Last();
+        title = friendlyName.Replace("Layer", " ");
         if (isRoot)
         {
             title += " (Root)";
@@ -43,12 +48,13 @@ public class GraphNode : Node
     private void AddPropertyFields()
     {
         // Add fields based on layer type
-        var fields = TerrainLayerRegistry.Instance.GetPropertiesName(Data.layerType);
+        var fields = _graph.GetPropertyNames(Data.layerType);
         for (var i = 0; i < fields.Length;i++)
         {
             var field = fields[i];
             var floatField = new FloatField(field) { value = Data.properties[i] };
-            floatField.RegisterValueChangedCallback(evt => Data.properties[i] = evt.newValue);
+            int index = i;
+            floatField.RegisterValueChangedCallback(evt => Data.properties[index] = evt.newValue);
             extensionContainer.Add(floatField);
         }
     }
