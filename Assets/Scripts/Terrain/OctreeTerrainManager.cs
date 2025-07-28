@@ -43,6 +43,7 @@ public class OctreeTerrainManager : MonoBehaviour
     private NativeList<TerrainModification> terrainModifications;
 
     private Dictionary<int, ChunkData> activeChunkData;
+    private Dictionary<int, Chunk.MeshData> activeMeshData;
 
     // Dictionary to track children that need to be destroyed after a parent merge is complete.
     // Key: parent node index, Value: children start index
@@ -89,6 +90,9 @@ public class OctreeTerrainManager : MonoBehaviour
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
         terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
+        
+        activeMeshData = new Dictionary<int, Chunk.MeshData>();
+        activeChunkData = new Dictionary<int, ChunkData>();
     }
 
     private void InitializeMarchingCubesTables()
@@ -108,6 +112,12 @@ public class OctreeTerrainManager : MonoBehaviour
             genJob.meshData.Dispose();
         }
         generationJobs.Clear();
+        
+        foreach (var meshData in activeMeshData.Values)
+        {
+            meshData.Dispose();
+        }
+        activeMeshData.Clear();
 
         foreach (var data in activeChunkData.Values)
         {
@@ -182,6 +192,12 @@ public class OctreeTerrainManager : MonoBehaviour
             if (activeChunks.ContainsKey(index) && activeChunks[index] == chunk)
             {
                 chunk.ApplyGeneratedMesh(meshData);
+
+                if (activeMeshData.ContainsKey(index))
+                {
+                    activeMeshData[index].Dispose();
+                }
+                activeMeshData[index] = meshData;
             }
             else
             {
@@ -357,6 +373,12 @@ public class OctreeTerrainManager : MonoBehaviour
             chunkPool.Return(chunk);
             activeChunks.Remove(nodeIndex);
         }
+        if (activeMeshData.TryGetValue(nodeIndex, out var meshData))
+        {
+            meshData.Dispose();
+            activeMeshData.Remove(nodeIndex);
+        }
+
         if (activeChunkData.TryGetValue(nodeIndex, out var data))
         {
             data.Dispose();
@@ -457,6 +479,10 @@ public class OctreeTerrainManager : MonoBehaviour
         var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
 
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
+    }
+    public bool Raycast(Ray ray, out BurstRaycast.RaycastHit hit)
+    {
+        return BurstRaycast.Raycast(ray, nodes, activeMeshData, out hit);
     }
 
     private void OnDrawGizmos()

@@ -24,7 +24,7 @@ public class TerrainEditor : MonoBehaviour
     private void ModifyTerrain(bool dig)
     {
         Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit)) return;
+        if (!OctreeTerrainManager.Instance.Raycast(ray, out var hit)) return;
         float strength = dig ? -modificationStrength : modificationStrength;
         OctreeTerrainManager.Instance.ModifyTerrain(hit.point, strength, modificationRadius, editType);
         lastEditTime = Time.time;

@@ -4,19 +4,18 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine.Rendering;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
     public MeshFilter meshFilter;
     public MeshRenderer meshRenderer;
-    public MeshCollider meshCollider;
 
     public struct MeshData
     {
         public NativeList<float3> vertices;
         public NativeList<int> triangles;
         public NativeList<float> vertexTypes;
-        public NativeList<float3> normals; // Add this line
+        public NativeList<float3> normals; 
         public bool IsCreated => vertices.IsCreated && triangles.IsCreated && vertexTypes.IsCreated && normals.IsCreated;
 
         public void Dispose()
@@ -24,7 +23,7 @@ public class Chunk : MonoBehaviour
             if (vertices.IsCreated) vertices.Dispose();
             if (triangles.IsCreated) triangles.Dispose();
             if (vertexTypes.IsCreated) vertexTypes.Dispose();
-            if (normals.IsCreated) normals.Dispose(); // And this one
+            if (normals.IsCreated) normals.Dispose(); 
         }
     }
 
@@ -35,7 +34,6 @@ public class Chunk : MonoBehaviour
     public void ClearMesh()
     {
         meshFilter.mesh = null;
-        meshCollider.sharedMesh = null;
     }
 
     public JobHandle ScheduleTerrainGeneration(OctreeNode node, NativeArray<float> densityMap, NativeArray<byte> voxelTypes, JobHandle dependency, out MeshData meshData)
@@ -86,21 +84,17 @@ public class Chunk : MonoBehaviour
 
             mesh.SetUVs(1, meshData.vertexTypes.AsArray());
             
-            mesh.SetNormals(meshData.normals.AsArray()); // Set the calculated normals
+            mesh.SetNormals(meshData.normals.AsArray());
 
             mesh.RecalculateBounds();
-            // We no longer need to recalculate normals here!
-            // mesh.RecalculateNormals();
-
+            
             meshFilter.mesh = mesh;
-            meshCollider.sharedMesh = mesh;
         }
         else
         {
             meshFilter.mesh = null;
-            meshCollider.sharedMesh = null;
         }
 
-        if(meshData.IsCreated) meshData.Dispose();
+        // if(meshData.IsCreated) meshData.Dispose();
     }
 }
