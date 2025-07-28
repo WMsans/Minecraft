@@ -52,6 +52,7 @@ public class OctreeTerrainManager : MonoBehaviour
     // Dictionary to track the parent of new children from a subdivision.
     // Key: child node index, Value: parent node index
     private Dictionary<int, int> subdivisionParentMap = new Dictionary<int, int>();
+    private Dictionary<int, int> subdivisionCompletionCounter = new Dictionary<int, int>();
 
     private void Awake()
     {
@@ -206,20 +207,10 @@ public class OctreeTerrainManager : MonoBehaviour
             }
             
             // Cleanup Case 1: A child of a subdivision finished generating.
-            if (subdivisionParentMap.TryGetValue(index, out int parentNodeIndex))
+            
+            if (subdivisionParentMap.Remove(index, out int parentNodeIndex)) // Use .Remove to ensure we process each child only once
             {
-                // The parent chunk is now obsolete. Destroy it.
-                DestroyChunk(parentNodeIndex);
-
-                // Remove all sibling mappings to prevent this from running multiple times.
-                var parentNode = nodes[parentNodeIndex];
-                if (parentNode.childrenIndex != -1)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        subdivisionParentMap.Remove(parentNode.childrenIndex + i);
-                    }
-                }
+                HandleChildCompletion(parentNodeIndex);
             }
 
             // Cleanup Case 2: A parent of a merge finished generating.
@@ -366,7 +357,7 @@ public class OctreeTerrainManager : MonoBehaviour
             job.meshData.Dispose();
             generationJobs.Remove(nodeIndex);
         }
-
+    
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
             chunk.ClearMesh();
@@ -378,11 +369,39 @@ public class OctreeTerrainManager : MonoBehaviour
             meshData.Dispose();
             activeMeshData.Remove(nodeIndex);
         }
-
+    
         if (activeChunkData.TryGetValue(nodeIndex, out var data))
         {
             data.Dispose();
             activeChunkData.Remove(nodeIndex);
+        }
+        
+        if (subdivisionParentMap.Remove(nodeIndex, out int parentNodeIndex))
+        {
+            HandleChildCompletion(parentNodeIndex);
+        }
+    }
+    
+    /// <summary>
+    /// Handles the completion of a child chunk from a subdivision.
+    /// Once all 8 children are accounted for, it triggers the destruction of the parent chunk.
+    /// </summary>
+    /// <param name="parentNodeIndex">The index of the parent node whose child has completed.</param>
+    private void HandleChildCompletion(int parentNodeIndex)
+    {
+        // Initialize or increment the counter for the parent.
+        if (!subdivisionCompletionCounter.TryGetValue(parentNodeIndex, out int count))
+        {
+            count = 0;
+        }
+        subdivisionCompletionCounter[parentNodeIndex] = count + 1;
+
+        // If all 8 children are accounted for, the parent is now fully obsolete.
+        if (subdivisionCompletionCounter[parentNodeIndex] >= 8)
+        {
+            // Destroy the parent chunk and clean up the counter.
+            DestroyChunk(parentNodeIndex);
+            subdivisionCompletionCounter.Remove(parentNodeIndex);
         }
     }
 
