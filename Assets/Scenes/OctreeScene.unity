@@ -178,7 +178,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 5000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -648,7 +648,7 @@ MonoBehaviour:
   player: {fileID: 1726203990}
   mainCamera: {fileID: 330585545}
   maxDepth: 6
-  nodeSize: 2048
+  nodeSize: 4096
   terrainGraph: {fileID: 11400000, guid: 029113a7e5ab5234a92772e9eecc62b7, type: 2}
   chunkPrefab: {fileID: 8453252405567975763, guid: 84e79c0b898fadf4bb937720a0535148, type: 3}
 --- !u!1 &1887905483

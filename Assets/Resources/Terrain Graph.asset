@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Terrain Graph
   m_EditorClassIdentifier: 
   nodes:
-  - guid: f3605ed1-846a-466f-8f88-d562f8eff402
-    layerType: PerlinNoiseTerrainLayer
-    position: {x: 78, y: 234.66666}
+  - guid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
+    layerType: BlockTypeTerrainLayer
+    position: {x: 1066, y: 234.66666}
     properties:
-    - 0.05
+    - 4
     - 10
     - 0
     - 0
@@ -33,12 +33,76 @@ MonoBehaviour:
     - 0
     - 0
     - 0
-  - guid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
-    layerType: BlockTypeTerrainLayer
-    position: {x: 298.66666, y: 234.66666}
+  - guid: b2e738b4-5241-4453-a677-63953b6a63ad
+    layerType: FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 256.66666, y: 234.66666}
     properties:
-    - -20
-    - -10
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: 0e012f6f-676e-42b4-9138-619b941fb2c9
+    layerType: PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 442.66666, y: 234.66666}
+    properties:
+    - 0.005
+    - 200
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: b031386f-ab86-421b-a432-659688eeda06
+    layerType: PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 642, y: 234.66666}
+    properties:
+    - 0.01
+    - 50
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: 19cf25ff-122c-400d-a47e-e7852b3ed144
+    layerType: PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 847.3333, y: 234.66666}
+    properties:
+    - 0.05
+    - 10
     - 0
     - 0
     - 0
@@ -54,15 +118,22 @@ MonoBehaviour:
     - 0
     - 0
   edges:
-  - outputNodeGuid: f3605ed1-846a-466f-8f88-d562f8eff402
+  - outputNodeGuid: b2e738b4-5241-4453-a677-63953b6a63ad
+    inputNodeGuid: 0e012f6f-676e-42b4-9138-619b941fb2c9
+  - outputNodeGuid: 0e012f6f-676e-42b4-9138-619b941fb2c9
+    inputNodeGuid: b031386f-ab86-421b-a432-659688eeda06
+  - outputNodeGuid: b031386f-ab86-421b-a432-659688eeda06
+    inputNodeGuid: 19cf25ff-122c-400d-a47e-e7852b3ed144
+  - outputNodeGuid: 19cf25ff-122c-400d-a47e-e7852b3ed144
     inputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
   rootNode:
-    guid: f3605ed1-846a-466f-8f88-d562f8eff402
-    layerType: PerlinNoiseTerrainLayer
-    position: {x: 589.3333, y: 254}
+    guid: b2e738b4-5241-4453-a677-63953b6a63ad
+    layerType: FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 256.66666, y: 234.66666}
     properties:
-    - 0.05
-    - 10
+    - 0
+    - 0
     - 0
     - 0
     - 0
@@ -78,5 +149,6 @@ MonoBehaviour:
     - 0
     - 0
   layerTypeNames:
-  - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null

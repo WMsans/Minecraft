@@ -88,7 +88,7 @@ public class TerrainGenerator
     {
         var job = new ApplyLayersJob
         {
-            seed = 1234, // Replace with your seed logic
+            seed = SeedController.Seed, 
             layers = _layersArray,
             density = density,
             voxelTypes = voxelTypes,

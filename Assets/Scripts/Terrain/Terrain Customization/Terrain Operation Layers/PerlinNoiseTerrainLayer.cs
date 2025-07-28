@@ -27,7 +27,7 @@ public unsafe struct PerlinNoiseTerrainLayer : ITerrainLayer
 
             float noiseValue = BurstNoiseGenerator.Perlin(seed, worldX * noiseScale, worldZ * noiseScale) * noiseStrength;
 
-            density[i] = worldY - noiseValue;
+            density[i] -= noiseValue;
         }
     }
 
