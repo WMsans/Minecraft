@@ -20,13 +20,25 @@ public class TerrainGraphView : GraphView
         this.AddManipulator(new SelectionDragger());
         this.AddManipulator(new RectangleSelector());
 
-        var grid = new GridBackground();
-        Insert(0, grid);
-        grid.StretchToParentSize();
+        AddBackgroundGrid();
+        AddStyles();
 
         LoadGraph();
 
         graphViewChanged += OnGraphViewChanged;
+    }
+
+    private void AddBackgroundGrid()
+    {
+        var grid = new GridBackground();
+        grid.StretchToParentSize();
+        Insert(0, grid);
+    }
+
+    private void AddStyles()
+    {
+        var styleSheet = (StyleSheet)EditorGUIUtility.Load("TerrainGraph/TGraphViewStyles.uss");
+        styleSheets.Add(styleSheet);
     }
 
     private void LoadGraph()
@@ -67,6 +79,7 @@ public class TerrainGraphView : GraphView
                     if (_graph.rootNode == nodeView.Data)
                     {
                         _graph.rootNode = null;
+                        UpdateRootNodeVisuals();
                     }
                     _graph.nodes.Remove(nodeView.Data);
                 }
@@ -91,6 +104,17 @@ public class TerrainGraphView : GraphView
             }
         }
         
+        if (graphViewChange.movedElements != null)
+        {
+            foreach (var element in graphViewChange.movedElements)
+            {
+                if (element is GraphNode nodeView)
+                {
+                    nodeView.Data.position = nodeView.GetPosition().position;
+                }
+            }
+        }
+
         // Mark the asset as dirty to ensure changes are saved
         EditorUtility.SetDirty(_graph);
         return graphViewChange;
@@ -141,6 +165,7 @@ public class TerrainGraphView : GraphView
     private void CreateNodeView(NodeData nodeData)
     {
         var nodeView = new GraphNode(nodeData, _graph);
+        nodeView.SetAsRoot(nodeData == _graph.rootNode);
         AddElement(nodeView);
     }
 

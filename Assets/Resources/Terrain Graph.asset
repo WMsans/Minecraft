@@ -1,3 +1,82 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0ee58fa614580ad39190af73126a413397b3eb0513499815f5719361fb0691ac
-size 1564
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1796b96fd093473e85c16ea8a499a842, type: 3}
+  m_Name: Terrain Graph
+  m_EditorClassIdentifier: 
+  nodes:
+  - guid: f3605ed1-846a-466f-8f88-d562f8eff402
+    layerType: PerlinNoiseTerrainLayer
+    position: {x: 78, y: 234.66666}
+    properties:
+    - 0.05
+    - 10
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
+    layerType: BlockTypeTerrainLayer
+    position: {x: 298.66666, y: 234.66666}
+    properties:
+    - -20
+    - -10
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  edges:
+  - outputNodeGuid: f3605ed1-846a-466f-8f88-d562f8eff402
+    inputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
+  rootNode:
+    guid: f3605ed1-846a-466f-8f88-d562f8eff402
+    layerType: PerlinNoiseTerrainLayer
+    position: {x: 589.3333, y: 254}
+    properties:
+    - 0.05
+    - 10
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  layerTypeNames:
+  - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
