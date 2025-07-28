@@ -80,9 +80,8 @@ public static class BurstRaycast
         var hits = new NativeList<RaycastHit>(totalTriangleCount, Allocator.TempJob);
         JobHandle jobHandle = default;
 
-        for (int i = 0; i < intersectingNodeIndices.Count; i++)
+        foreach (var nodeIndex in intersectingNodeIndices)
         {
-            var nodeIndex = intersectingNodeIndices[i];
             var meshData = activeMeshData[nodeIndex];
 
             if (meshData.triangles.Length > 0)
