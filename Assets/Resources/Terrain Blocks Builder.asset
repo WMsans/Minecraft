@@ -1,3 +1,68 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:49d9164ba8255799a6bc8595853711ba712ec97f6f1df2ca0cf410f6a8a62b8b
-size 2964
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 256707ac4a0bde546969d990158856b2, type: 3}
+  m_Name: Terrain Blocks Builder
+  m_EditorClassIdentifier: 
+  TargetMaterial: {fileID: 2100000, guid: ae387f2b7998e67409bc73742ce93986, type: 2}
+  Blocks:
+  - Name: Grass
+    Albedo: {fileID: 2800000, guid: 8e3972ad0a0dce34e9c1a44d3b4ff5a7, type: 3}
+    Normal: {fileID: 2800000, guid: 6149208393558c84e85a91227c42bfdb, type: 3}
+    Smoothness: {fileID: 2800000, guid: e8ac9f0e62bfd444184ea9c55f2d9b99, type: 3}
+    Metallic: 0.35
+    AmbientOcclusion: {fileID: 2800000, guid: c928b6d2f01a5f546b2c3b834fd9b612, type: 3}
+    TopAlbedo: {fileID: 2800000, guid: 61a53972b0b2410439415a6c89ac4696, type: 3}
+    TopNormal: {fileID: 2800000, guid: 263cd9758be015840942d305da600450, type: 3}
+    TopSmoothness: {fileID: 2800000, guid: b0f7b2c0d62b08b42b90247e30fdee2f, type: 3}
+    TopMetallic: 0
+    TopAmbientOcclusion: {fileID: 2800000, guid: 299e231fa4cf1ed4487df66e49fb630a, type: 3}
+  - Name: Dirt
+    Albedo: {fileID: 2800000, guid: 8e3972ad0a0dce34e9c1a44d3b4ff5a7, type: 3}
+    Normal: {fileID: 2800000, guid: 6149208393558c84e85a91227c42bfdb, type: 3}
+    Smoothness: {fileID: 2800000, guid: e8ac9f0e62bfd444184ea9c55f2d9b99, type: 3}
+    Metallic: 0.5
+    AmbientOcclusion: {fileID: 2800000, guid: c928b6d2f01a5f546b2c3b834fd9b612, type: 3}
+    TopAlbedo: {fileID: 0}
+    TopNormal: {fileID: 0}
+    TopSmoothness: {fileID: 0}
+    TopMetallic: 0.5
+    TopAmbientOcclusion: {fileID: 0}
+  - Name: Stone
+    Albedo: {fileID: 2800000, guid: 44ff63c4408999f449b054a881475c1c, type: 3}
+    Normal: {fileID: 2800000, guid: 30093b27ea19df34b94589f3acf6c1c1, type: 3}
+    Smoothness: {fileID: 2800000, guid: 2d8f0ee7114fcf2418bc2c2fb8593d96, type: 3}
+    Metallic: 0.5
+    AmbientOcclusion: {fileID: 2800000, guid: 0c7aa32239780d34992e348d075ff4db, type: 3}
+    TopAlbedo: {fileID: 0}
+    TopNormal: {fileID: 0}
+    TopSmoothness: {fileID: 0}
+    TopMetallic: 0
+    TopAmbientOcclusion: {fileID: 0}
+  - Name: Snow
+    Albedo: {fileID: 2800000, guid: d0e3ed5237e776e47b70c5f50c293163, type: 3}
+    Normal: {fileID: 2800000, guid: 8f26f74f210a92f4181f0d6889a31148, type: 3}
+    Smoothness: {fileID: 2800000, guid: 1e3dce9fedb37f44daee0f2cd2fecca4, type: 3}
+    Metallic: 0.4
+    AmbientOcclusion: {fileID: 2800000, guid: f83e2d9deef141844b8bb16d843f2241, type: 3}
+    TopAlbedo: {fileID: 2800000, guid: 5acbfcaf97503054f840b971403f909c, type: 3}
+    TopNormal: {fileID: 2800000, guid: f96ae6a9b719dac4197dc8b51b92c714, type: 3}
+    TopSmoothness: {fileID: 2800000, guid: 1d474c18c3c237b48a163944547961da, type: 3}
+    TopMetallic: 0.2
+    TopAmbientOcclusion: {fileID: 2800000, guid: d4632dbfb2078d4448a292e2c050a460, type: 3}
+  SideAlbedoArray: {fileID: 18700000, guid: edd8934662ae58c4c91b367e5d0a4df8, type: 2}
+  SideNormalArray: {fileID: 18700000, guid: a14643d72c06c1d43a6a9d8f83aa1a72, type: 2}
+  SideSmoothnessArray: {fileID: 18700000, guid: 6c3eb4c943dfa4748aa65d49be08ea49, type: 2}
+  SideAmbientOcclusionArray: {fileID: 18700000, guid: f30acb059fe04754ab4b3e896ab1f953, type: 2}
+  TopAlbedoArray: {fileID: 18700000, guid: 018bf252538f62241830a58d22230cf4, type: 2}
+  TopNormalArray: {fileID: 18700000, guid: 782f1612b62a4d44aaa301f829f9474f, type: 2}
+  TopSmoothnessArray: {fileID: 18700000, guid: c08d20b72b0af794e8da5ab21263c703, type: 2}
+  TopAmbientOcclusionArray: {fileID: 18700000, guid: a9d01d36650000347bf0eb9892cdefb6, type: 2}

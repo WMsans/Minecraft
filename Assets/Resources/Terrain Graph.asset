@@ -15,7 +15,7 @@ MonoBehaviour:
   nodes:
   - guid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
     layerType: BlockTypeTerrainLayer
-    position: {x: 1066, y: 234.66666}
+    position: {x: 1109.3334, y: 234.66666}
     properties:
     - 4
     - 10
@@ -117,6 +117,48 @@ MonoBehaviour:
     - 0
     - 0
     - 0
+  - guid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
+    layerType: ErosionTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 1382.6666, y: 234.66666}
+    properties:
+    - 0.02
+    - 30
+    - 20
+    - 4
+    - 2
+    - 0.5
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: 5506f28c-9790-42e5-98fc-9a013201fb28
+    layerType: ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 1602, y: 234.66666}
+    properties:
+    - 70
+    - 10
+    - 0.05
+    - 20
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
   edges:
   - outputNodeGuid: b2e738b4-5241-4453-a677-63953b6a63ad
     inputNodeGuid: 0e012f6f-676e-42b4-9138-619b941fb2c9
@@ -126,6 +168,10 @@ MonoBehaviour:
     inputNodeGuid: 19cf25ff-122c-400d-a47e-e7852b3ed144
   - outputNodeGuid: 19cf25ff-122c-400d-a47e-e7852b3ed144
     inputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
+  - outputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
+    inputNodeGuid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
+  - outputNodeGuid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
+    inputNodeGuid: 5506f28c-9790-42e5-98fc-9a013201fb28
   rootNode:
     guid: b2e738b4-5241-4453-a677-63953b6a63ad
     layerType: FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
@@ -150,5 +196,7 @@ MonoBehaviour:
     - 0
   layerTypeNames:
   - FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - ErosionTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
