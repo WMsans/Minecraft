@@ -108,6 +108,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Complete any running jobs first to prevent errors
         applyModificationsHandle.Complete();
         foreach (var genJob in generationJobs.Values)
         {
@@ -116,6 +117,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }
         generationJobs.Clear();
 
+        // Dispose of all native collections owned by this manager
         if (nodes.IsCreated) nodes.Dispose();
         if (triangulationTable.IsCreated) triangulationTable.Dispose();
         if (cornerOffsets.IsCreated) cornerOffsets.Dispose();
@@ -123,7 +125,16 @@ public class OctreeTerrainManager : MonoBehaviour
         if (cornerIndexBFromEdge.IsCreated) cornerIndexBFromEdge.Dispose();
         if (terrainModifications.IsCreated) terrainModifications.Dispose();
 
-        terrainGenerator.Dispose();
+        // Dispose the terrain generator and the chunk data manager
+        // This is the critical part that was missing
+        if (terrainGenerator != null)
+        {
+            terrainGenerator.Dispose();
+        }
+        if (chunkDataManager != null)
+        {
+            chunkDataManager.Dispose();
+        }
     }
 
     private void Update()
@@ -190,24 +201,25 @@ public class OctreeTerrainManager : MonoBehaviour
                 chunkData.triangles.Clear();
                 chunkData.triangles.AddRange(meshData.triangles.AsArray());
             }
-            
-            if (meshData.IsCreated) meshData.Dispose();
-            
-            if (!activeChunks.ContainsKey(index))
+            else
             {
+                // If the chunk is no longer active, just return the pooled chunk
                 chunkPool.Return(chunk);
             }
 
-            // Cleanup Case 1: A child of a subdivision finished generating.
-            if (subdivisionParentMap.Remove(index, out int parentNodeIndex)) // Use .Remove to ensure we process each child only once
+            // Dispose the meshData regardless of the chunk's status
+            if (meshData.IsCreated)
+            {
+                meshData.Dispose();
+            }
+
+            if (subdivisionParentMap.Remove(index, out int parentNodeIndex))
             {
                 HandleChildCompletion(parentNodeIndex);
             }
 
-            // Cleanup Case 2: A parent of a merge finished generating.
             if (pendingMergeCleanup.TryGetValue(index, out int childrenIndexToDestroy))
             {
-                // The parent chunk is now visible. Destroy the obsolete children.
                 var stack = new Stack<int>();
                 if (childrenIndexToDestroy != -1)
                 {
@@ -227,8 +239,6 @@ public class OctreeTerrainManager : MonoBehaviour
                         DestroyChunk(currentIndex + i);
                     }
                 }
-
-                // Finalize the node state.
                 var node = nodes[index];
                 node.childrenIndex = -1;
                 nodes[index] = node;

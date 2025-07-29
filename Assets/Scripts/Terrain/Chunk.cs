@@ -83,18 +83,16 @@ public class Chunk : MonoBehaviour
             mesh.SetSubMesh(0, subMesh);
 
             mesh.SetUVs(1, meshData.vertexTypes.AsArray());
-            
+        
             mesh.SetNormals(meshData.normals.AsArray());
 
             mesh.RecalculateBounds();
-            
+        
             meshFilter.mesh = mesh;
         }
         else
         {
             meshFilter.mesh = null;
         }
-
-        // if(meshData.IsCreated) meshData.Dispose();
     }
 }

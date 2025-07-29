@@ -1,9 +1,9 @@
+using System; 
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
-public class ChunkDataManager
+public class ChunkDataManager : IDisposable
 {
     private Dictionary<int, ChunkData> activeChunkData = new Dictionary<int, ChunkData>();
     private string savePath;
@@ -33,7 +33,6 @@ public class ChunkDataManager
         if (File.Exists(filePath))
         {
             // In a real implementation, you would deserialize the data from the file.
-            // For now, we'll just create a new ChunkData.
         }
 
         var newChunkData = new ChunkData();
@@ -50,7 +49,7 @@ public class ChunkDataManager
             // In a real implementation, you would serialize the data and save it to the file.
         }
     }
-    
+
     public void UnloadChunkData(int nodeIndex)
     {
         if (activeChunkData.TryGetValue(nodeIndex, out var data))
@@ -60,9 +59,17 @@ public class ChunkDataManager
         }
     }
 
-
     private string GetChunkDataPath(int nodeIndex)
     {
         return Path.Combine(savePath, $"chunk_{nodeIndex}.dat");
+    }
+
+    public void Dispose()
+    {
+        foreach (var chunkData in activeChunkData.Values)
+        {
+            chunkData.Dispose();
+        }
+        activeChunkData.Clear();
     }
 }
