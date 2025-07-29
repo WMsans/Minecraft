@@ -149,8 +149,10 @@ MonoBehaviour:
     - 0
     - 0
   layerTypeNames:
-  - ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-  - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - ApplyVegetationTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    PublicKeyToken=null
   - FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ErosionTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null

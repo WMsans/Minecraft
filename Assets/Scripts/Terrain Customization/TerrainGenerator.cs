@@ -84,7 +84,7 @@ public class TerrainGenerator
             _layersArray.Dispose();
     }
 
-    public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, float3 offset, float scale, JobHandle dependency)
+    public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, NativeList<EntityData> entities, int chunkSize, float3 offset, float scale, JobHandle dependency)
     {
         var job = new ApplyLayersJob
         {
@@ -92,6 +92,7 @@ public class TerrainGenerator
             layers = _layersArray,
             density = density,
             voxelTypes = voxelTypes,
+            entities = entities, 
             chunkSize = chunkSize,
             offset = offset,
             scale = scale

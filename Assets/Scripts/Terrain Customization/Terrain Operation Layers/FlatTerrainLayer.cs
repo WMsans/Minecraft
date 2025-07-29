@@ -1,11 +1,12 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Mathematics;
 
 [BurstCompile]
 public unsafe struct FlatTerrainLayer : ITerrainLayer
 {
     [BurstCompile]
-    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale)
+    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities)
     {
         if (!layer.enabled) return;
 

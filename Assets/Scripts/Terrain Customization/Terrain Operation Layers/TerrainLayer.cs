@@ -7,19 +7,19 @@ using Unity.Mathematics;
 [BurstCompile]
 public unsafe struct TerrainLayer
 {
-    public delegate void ApplyDelegate(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale);
+    // The delegate now accepts a void pointer for entity data.
+    public delegate void ApplyDelegate(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities);
 
     public FunctionPointer<ApplyDelegate> ApplyFunction;
 
     [MarshalAs(UnmanagedType.U1)]
     public bool enabled;
 
-    // Add a fixed-size buffer for layer-specific properties.
-    // This allows for up to 16 float properties per layer.
     public fixed float properties[16];
 
-    public void Apply(int seed, NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, in float3 offset, float scale)
+    // The Apply method is updated to pass the pointer.
+    public void Apply(int seed, NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, in float3 offset, float scale, void* entities)
     {
-        ApplyFunction.Invoke(ref this, seed, (float*)density.GetUnsafePtr(), (byte*)voxelTypes.GetUnsafePtr(), density.Length, chunkSize, in offset, scale);
+        ApplyFunction.Invoke(ref this, seed, (float*)density.GetUnsafePtr(), (byte*)voxelTypes.GetUnsafePtr(), density.Length, chunkSize, in offset, scale, entities);
     }
 }

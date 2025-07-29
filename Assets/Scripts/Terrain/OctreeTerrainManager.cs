@@ -301,7 +301,9 @@ public class OctreeTerrainManager : MonoBehaviour
 
             var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, chunkData.entities, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+
+            applyLayersHandle.Complete(); 
 
             var applyModsJob = new ApplyModificationsJob
             {
@@ -514,7 +516,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
         var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, chunkData.entities, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
         var applyModsJob = new ApplyModificationsJob
         {

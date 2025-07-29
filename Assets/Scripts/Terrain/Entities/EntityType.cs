@@ -11,7 +11,8 @@ public struct EntityType : IComponentData
     {
         Player,
         Enemy,
-        Item
+        Item,
+        Tree
     }
     public Type Value;
 }
