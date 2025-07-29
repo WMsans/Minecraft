@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: e1b12054fe3d2634f8b593de00ad19b4
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 12385, guid: 0000000000000000e000000000000000, type: 0}
+  disableValidation: 0
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Editor/UIBuilder/NodeViewTitleColors.uss
+  uploadId: 776017

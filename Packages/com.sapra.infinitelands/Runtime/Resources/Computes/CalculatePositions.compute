@@ -1,0 +1,164 @@
+#pragma kernel CalculatePositions
+#pragma kernel OriginShift
+#define POSITION_SIZE 32
+#define GROUP_SIZE 512
+
+#include "..\Include\Simplex.cginc"
+#include "..\Include\Quaternion.cginc"
+#include "..\Include\DataControl.cginc"
+
+struct InstanceData {
+    float3 position;
+    uint2 quaternionScale;
+    uint normalandTexture;
+};
+
+struct VegetationData
+{
+    float3 position;
+    float3 normal;
+    float3 idHash;
+    float validity;
+    float2 worldUV;
+    float density;
+};
+
+RWStructuredBuffer<InstanceData> _PerInstanceData;
+RWStructuredBuffer<int> _MinMaxBuffer;
+Texture2D<float4> _TerrainHeightNormal;
+Texture2D<float4> _DensityMap;
+SamplerState my_point_clamp_sampler;
+SamplerState my_linear_clamp_sampler;
+
+//Asset Properties
+float _VerticalPosition, _DistanceBetween, _PositionRandomness, _ChunkSize;
+int _DensityIsHeight, _AlignToGround, _HeightVariation;
+float _PatchSize;
+float2 _Size;
+
+//Terrain Properties
+int _Resolution;
+float _MeshScale;
+float3 _MeshOffset;
+
+float4x4 _localToWorld;
+float4x4 _worldToLocal;
+
+//Rendering Properties
+uint _IndexOffset,_ItemIndex, _SubTextureIndex, _ChunkInstancesRow;
+float3 _ChunkPosition;
+
+
+float4 MultiplyVector(float4x4 trs, float3 position)
+{
+    float4 result = 0;
+    result.x = trs._11 * position.x + trs._12 * position.y + trs._13 * position.z;
+    result.y = trs._21 * position.x + trs._22 * position.y + trs._23 * position.z;
+    result.z = trs._31 * position.x + trs._32 * position.y + trs._33 * position.z;
+    return result;
+}
+
+inline float3 GetPositionWithHeight(float2 uv, float height)
+{
+    float3 position = float3(uv.x * _MeshScale, height, uv.y * _MeshScale);
+    return position;
+}
+
+VegetationData GetData(uint2 index)
+{
+    float3 idHash = -1;
+    float2 uv = VegetationUVFromIndex(index,
+        _ChunkInstancesRow, 
+        _ChunkPosition, _ChunkSize,
+        _ItemIndex, _DistanceBetween, _PositionRandomness,
+        _MeshScale, idHash);
+    float3 position = 0;
+    float3 normal = 0;
+    float validity = 0;
+    float density = 0;
+    if (uv.x <= 1 && uv.x >= 0 && uv.y <= 1 && uv.y >= 0)
+    {
+        float2 uvScaledForSampler = ScaleForSamplers(uv, _Resolution);
+        float4 interpolatedNormalAndHeight = _TerrainHeightNormal.SampleLevel(my_linear_clamp_sampler, uvScaledForSampler, 0);
+        position = GetPositionWithHeight(uv, interpolatedNormalAndHeight.a);
+        normal = normalize(interpolatedNormalAndHeight.rgb);
+        // Calculate height with bilinear interpolation of the heights of the nodes of the cell
+
+        float2 offset = idHash.zx;        
+        density = _DensityMap.SampleLevel(my_linear_clamp_sampler, uvScaledForSampler, 0)[_SubTextureIndex];
+        validity = step(idHash.y, density);
+    }
+
+    VegetationData data;
+    data.position = position;
+    data.normal = normal;
+    data.idHash = idHash;
+    data.validity = validity;
+    data.worldUV = uv;
+    data.density = density;
+    return data;
+}
+
+
+[numthreads(POSITION_SIZE,POSITION_SIZE,1)]
+void CalculatePositions(uint3 id: SV_DISPATCHTHREADID)
+{
+    if (id.x >= _ChunkInstancesRow || id.y >= _ChunkInstancesRow)
+        return;
+    
+    uint index = id.x + id.y * _ChunkInstancesRow+_IndexOffset;
+    VegetationData data = GetData(id.xy);
+
+    float sizeChance = 1;
+    if(_HeightVariation == 1 || _HeightVariation == 3)
+        sizeChance *= data.idHash.x;
+    
+    if(_HeightVariation == 2 || _HeightVariation == 3)
+        sizeChance *= saturate((snoise(data.position/_PatchSize)+1.0f)/2.0f);    
+
+    if(_DensityIsHeight == 1)
+        sizeChance *= data.density;
+    float size = lerp(_Size.x, _Size.y, sizeChance);
+    if(_DensityIsHeight == 2)
+        size *= data.density;
+
+    float4 rotation = rotate_angle_axis(data.idHash.x*PI, float3(0,1,0));
+    if(_AlignToGround != 0){
+        float3 targetDirection = _AlignToGround == 2 ? data.normal : float3(0,1,0);        
+        float4 aligned = from_to_rotation(float3(0,1,0),MultiplyVector(_localToWorld, targetDirection).xyz);
+        float4 combined = qmul(aligned, rotation);
+        rotation = combined;
+    }
+    
+    float4x4 trans = transpose(_localToWorld);
+    float4 worldOffset = trans[3];
+    trans[3] = float4(0,0,0,1);
+
+    float3 offsetTransformed = mul(_worldToLocal,float4(worldOffset.xyz, 0)).xyz+_MeshOffset;
+    offsetTransformed.xz -= _MeshScale/2.0f;
+
+    InstanceData resultData;
+    resultData.position = mul(transpose(trans),float4(data.position+_VerticalPosition*data.normal+offsetTransformed,1)).xyz;
+    resultData.quaternionScale = CompactRotationScale(rotation, size);
+
+    InstanceData current = _PerInstanceData[index];
+    uint textureIndex;
+    UnpackTextureIndex(current.normalandTexture, textureIndex);
+    if(data.validity > 0){
+        InterlockedMin(_MinMaxBuffer[0], (int)floor(data.position.y));
+        InterlockedMax(_MinMaxBuffer[1], (int)ceil(data.position.y));
+    }
+    
+    resultData.normalandTexture = CompactNormalTextureIndex(data.normal, textureIndex, data.validity);
+    _PerInstanceData[index] = resultData;
+}
+
+float3 _OriginOffset;
+[numthreads(GROUP_SIZE,1,1)]
+void OriginShift(uint3 id: SV_DISPATCHTHREADID)
+{
+    if (id.x >= _ChunkInstancesRow)
+        return;
+    
+    _PerInstanceData[id.x].position += _OriginOffset;
+}

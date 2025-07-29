@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 8d126b083719f294ba8b64e8b77b33cd
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Graph/Implementations/TerrainGenerator.cs
+  uploadId: 776017

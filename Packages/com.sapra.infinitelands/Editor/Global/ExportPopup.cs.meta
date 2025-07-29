@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 74a7be129a4651241bbf0c48e78af03c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_VisualTreeAsset: {fileID: 9197481963319205126, guid: 7541a6dbcc6146f4bbe92bda934df696,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Editor/Global/ExportPopup.cs
+  uploadId: 776017

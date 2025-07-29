@@ -1,0 +1,86 @@
+#pragma kernel AppendIndices
+#define GROUP_SIZE 512
+#pragma multi_compile_local _ SHADOWS
+#pragma multi_compile_local LIGHT_1 LIGHT_2 LIGHT_3
+#pragma multi_compile_local __ SHADOW_1 SHADOW_2 SHADOW_3
+
+RWStructuredBuffer<uint> _TargetLODs;
+RWStructuredBuffer<uint> _ReducedIndices;
+
+AppendStructuredBuffer<uint> _AppendableIndices_1;
+
+#if LIGHT_2 || LIGHT_3
+AppendStructuredBuffer<uint> _AppendableIndices_2;
+#endif
+
+#if LIGHT_3 
+AppendStructuredBuffer<uint> _AppendableIndices_3;
+#endif
+
+
+#if SHADOWS
+    AppendStructuredBuffer<uint> _AppendableShadowsIndices_1;
+    #if SHADOW_2 || SHADOW_3
+    AppendStructuredBuffer<uint> _AppendableShadowsIndices_2;
+    #endif
+    #if SHADOW_3
+    AppendStructuredBuffer<uint> _AppendableShadowsIndices_3;
+    #endif
+#endif
+
+uint _MaxInstances;
+uint _LODCount;
+uint _ShadowLodOffset;
+
+void UnMaskBasic(in uint value, out uint LodValue, out uint VisibleNormal, out uint VisibleShadow){
+    LodValue = value & 0xFF;
+    VisibleNormal = (value >> 22) & 1;
+    VisibleShadow = (value >> 31) & 1;
+}
+
+[numthreads(GROUP_SIZE,1,1)]
+void AppendIndices(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= _MaxInstances) 
+        return;
+    uint index = _ReducedIndices[id.x];
+    uint LodValue, VisibleNormal, VisibleShadow;
+    UnMaskBasic(_TargetLODs[index], LodValue, VisibleNormal, VisibleShadow);
+
+    // Handle normal visibility and append to the correct buffer
+    if (VisibleNormal > 0) {
+        if (LodValue == 0) {
+            _AppendableIndices_1.Append(index);
+        }
+        #if LIGHT_2 || LIGHT_3
+        else if (LodValue == 1) {
+            _AppendableIndices_2.Append(index);
+        }
+        #endif
+        #if LIGHT_3
+        else if (LodValue == 2) {
+            _AppendableIndices_3.Append(index);
+        }
+        #endif
+    }
+
+    #ifdef SHADOWS
+    // Handle shadow visibility and append to the correct shadow buffer
+    if (VisibleShadow > 0) {
+        uint newIndex = min(LodValue + _ShadowLodOffset, _LODCount - 1);
+        if (newIndex == 0) {
+            _AppendableShadowsIndices_1.Append(index);
+        }
+        #if SHADOW_2 || SHADOW_3
+        else if (newIndex == 1) {
+            _AppendableShadowsIndices_2.Append(index);
+        }
+        #endif
+        #if SHADOW_3 
+        else if (newIndex == 2) {
+            _AppendableShadowsIndices_3.Append(index);
+        }
+        #endif
+    }
+    #endif
+}

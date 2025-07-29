@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 61a6834b50019b74ca06b83b21617187
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Editor/Graph/Models/IRenderSerializableGraph.cs
+  uploadId: 776017

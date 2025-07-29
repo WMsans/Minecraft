@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 21c507a077d16e24cbb9a8e63a10df71
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Editor/Attributes/HideAttributeDrawer.cs
+  uploadId: 776017

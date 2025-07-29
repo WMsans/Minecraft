@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5fe392b17f3447e41a16e9ee15f8a685
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Grass Interactions (Built-in)/Materials/BasicParticleNew.mat
+  uploadId: 776017

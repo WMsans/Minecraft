@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 6f3d99cffcb7ede4995fa7d3125b9ce4
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Graph/Store/Pool/Implementations/ToReturn.cs
+  uploadId: 776017

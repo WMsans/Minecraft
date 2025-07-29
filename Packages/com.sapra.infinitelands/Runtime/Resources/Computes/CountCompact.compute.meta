@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 37e33f96cb7a876438fda13b25ca9149
+ComputeShaderImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Resources/Computes/CountCompact.compute
+  uploadId: 776017

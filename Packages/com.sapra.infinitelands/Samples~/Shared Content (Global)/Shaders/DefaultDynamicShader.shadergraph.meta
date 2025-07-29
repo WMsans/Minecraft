@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 1976e6c5c68139941924cb26138df06d
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Shaders/DefaultDynamicShader.shadergraph
+  uploadId: 776017

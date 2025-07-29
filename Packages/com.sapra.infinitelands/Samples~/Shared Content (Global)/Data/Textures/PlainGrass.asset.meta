@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9dcffdeb93aaa07489e6eabbdf5840f3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Data/Textures/PlainGrass.asset
+  uploadId: 776017

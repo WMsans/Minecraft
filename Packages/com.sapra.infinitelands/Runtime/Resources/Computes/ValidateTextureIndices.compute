@@ -1,0 +1,41 @@
+#pragma kernel ValidateTextureIndices
+#define POSITION_SIZE 32
+
+#include "..\Include\DataControl.cginc"
+
+//Rendering Properties
+uint _IndexOffset, _ChunkInstancesRow;
+struct InstanceData {
+    float3 position;
+    uint2 quaternionScale;
+    uint normalandTexture;
+};
+RWStructuredBuffer<InstanceData> _PerInstanceData;
+
+Buffer<uint> _ValidIndices;
+bool IsIndexValid(uint index)
+{
+    uint componentIndex = index >> 5; // Divide by 32
+    uint bitPosition = index & 31;    // Modulo 32
+    return ((_ValidIndices[componentIndex] >> bitPosition) & 1) == 0;
+}
+
+[numthreads(POSITION_SIZE,POSITION_SIZE,1)]
+void ValidateTextureIndices(uint3 id: SV_DISPATCHTHREADID)
+{
+    if (id.x >= _ChunkInstancesRow || id.y >= _ChunkInstancesRow)
+        return;
+
+    uint index = id.x + id.y * _ChunkInstancesRow+_IndexOffset;
+
+    InstanceData storedData = _PerInstanceData[index];
+    float3 normal;
+    bool isValid; 
+    int textureIndex;
+    UnpackTextureIndex(storedData.normalandTexture, textureIndex);
+    UnpackNormal(storedData.normalandTexture, normal);
+    UnpackIsValid(storedData.normalandTexture, isValid);
+
+    storedData.normalandTexture = CompactNormalTextureIndex(normal, textureIndex, isValid*IsIndexValid(textureIndex));
+    _PerInstanceData[index] = storedData;
+}

@@ -1,0 +1,25 @@
+.optional #type {
+    color: #858585;
+}
+
+Port.typeHeightData{
+    --port-color:rgb(144, 216, 150);
+}
+Port.typeHeightData.optional{
+    --port-color: rgb(98, 143, 100);
+}
+Port.typePointInstance{
+    --port-color:rgb(204, 206, 104);
+}
+Port.typePointInstance.optional{
+    --port-color: rgb(138, 139, 74);
+}
+
+Port.typeMISSING {
+    --port-color:rgb(255, 34, 34);
+}
+
+
+Port.typeMISSING #type{
+    color:rgb(255, 34, 34);
+}

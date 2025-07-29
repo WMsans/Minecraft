@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 58fb965b81430df4392d567b5ad11c42
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Grass Interactions (Built-in)/Prefab/DisplaceParticles.prefab
+  uploadId: 776017

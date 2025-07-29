@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: 01ea98c157c63f54ea814fbc42b8ebbe
+ShaderImporter:
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Resources/Include/IsShadows.hlsl
+  uploadId: 776017

@@ -1,0 +1,21 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+Texture2D<unorm float> inputRT;
+RWTexture2D<unorm float> outputRT;
+
+SamplerState sampler_inputRT;
+float RTSize;
+
+[numthreads(8,8,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (all(id.xy < (uint)RTSize))
+    {
+
+        float4 depths = inputRT.Gather(sampler_inputRT, (id.xy + 0.5)/ RTSize);
+
+        //find and return max depth
+        outputRT[id.xy] = min(min(depths.x, depths.y), min(depths.z, depths.w));
+    }
+}

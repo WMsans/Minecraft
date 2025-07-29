@@ -1,0 +1,104 @@
+#pragma kernel CalculateTextures
+#pragma multi_compile_local _ HEIGHTMAP_ENABLED
+#define POSITION_SIZE 32
+#define LevelSample
+
+
+#include "..\Include\GetTextureIndicesCommon.hlsl"
+#include "..\Include\DataControl.cginc"
+
+struct InstanceData {
+    float3 position;
+    uint2 quaternionScale;
+    uint normalandTexture;
+};
+
+StructuredBuffer<float> _textureSize;
+Texture2DArray _splatMap; 
+SamplerState sampler_splatMap;
+
+#ifdef HEIGHTMAP_ENABLED
+Texture2DArray _height_textures; 
+SamplerState sampler_height_textures;
+#endif
+
+RWStructuredBuffer<InstanceData> _PerInstanceData;
+
+//Asset Properties
+float _TextureRandomnessDistance, _DistanceBetween, _PositionRandomness, _ChunkSize;
+int _Resolution;
+
+//Terrain Properties
+float _MeshScale;
+
+//Rendering Properties
+uint _ItemIndex,_IndexOffset, _ChunkInstancesRow;
+float3 _ChunkPosition;
+
+float4 VectorSumNormalize(float4 weights){
+    float sum = weights.x+weights.y+weights.z+weights.w;
+    return weights/sum;
+}
+void GetTexturesIndices(in float2 correctUV, in float MeshScale, out int4 highestIndices, out float4 highestWeights){  
+    float2 uvForSamplers = ScaleForSamplers(correctUV, _Resolution);
+    SampleIndicesLevel(uvForSamplers,_splatMap, sampler_splatMap, highestIndices, highestWeights);
+
+    #ifdef HEIGHTMAP_ENABLED    
+    float2 worldUV = correctUV*MeshScale;
+    //Can i do this better?
+    float SizeX = _textureSize[highestIndices.x];
+    float SizeY = _textureSize[highestIndices.y];
+    float SizeZ = _textureSize[highestIndices.z];
+    float SizeW = _textureSize[highestIndices.w];
+
+    float4 heightMapStrength = float4(
+        _height_textures.SampleLevel(sampler_height_textures, float3(worldUV/SizeX, highestIndices.x),0).r,
+        _height_textures.SampleLevel(sampler_height_textures, float3(worldUV/SizeY, highestIndices.y),0).r,
+        _height_textures.SampleLevel(sampler_height_textures, float3(worldUV/SizeZ, highestIndices.z),0).r,
+        _height_textures.SampleLevel(sampler_height_textures, float3(worldUV/SizeW, highestIndices.w),0).r
+    );
+
+    heightMapStrength += 0.01f;
+    heightMapStrength *= VectorSumNormalize(highestWeights);
+    highestWeights = VectorSumNormalize(heightMapStrength);
+    #else
+    highestWeights = VectorSumNormalize(highestWeights);
+    #endif
+}
+
+[numthreads(POSITION_SIZE,POSITION_SIZE,1)]
+void CalculateTextures(uint3 id: SV_DISPATCHTHREADID)
+{
+    if (id.x >= _ChunkInstancesRow || id.y >= _ChunkInstancesRow)
+        return;
+
+    uint index = id.x + id.y * _ChunkInstancesRow+_IndexOffset;
+
+    float3 idHash; 
+    float2 worldUV = VegetationUVFromIndex(id.xy, 
+        _ChunkInstancesRow, 
+        _ChunkPosition, _ChunkSize,
+        _ItemIndex, _DistanceBetween, _PositionRandomness,
+        _MeshScale, idHash);
+    
+    int4 highestIndices = -1;
+    float4 highestWeights = .001f;
+    float2 offset = (idHash.zx*2.0-1.0)*_TextureRandomnessDistance/_MeshScale;
+
+    GetTexturesIndices(worldUV,_MeshScale, highestIndices, highestWeights);
+
+    half maxWeight = max(max(highestWeights.x, highestWeights.y),max(highestWeights.z, highestWeights.w));
+    half4 selected = highestWeights/maxWeight;
+    int4 newIndices = step(.99f, selected)*highestIndices;
+    int textureIndex = max(max(newIndices.x,newIndices.y), max(newIndices.z,newIndices.w));
+
+    InstanceData storedData = _PerInstanceData[index];
+    float3 normal;
+    bool isValid; 
+    UnpackNormal(storedData.normalandTexture, normal);
+    UnpackIsValid(storedData.normalandTexture, isValid);
+
+    storedData.normalandTexture = CompactNormalTextureIndex(normal, textureIndex, isValid);
+
+    _PerInstanceData[index] = storedData;
+}

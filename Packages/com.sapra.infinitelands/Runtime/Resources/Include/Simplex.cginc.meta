@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8699cdffb38adfb4391d6a3ddac1296e
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Resources/Include/Simplex.cginc
+  uploadId: 776017

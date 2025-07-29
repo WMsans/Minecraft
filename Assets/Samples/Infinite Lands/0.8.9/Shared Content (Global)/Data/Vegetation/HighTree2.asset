@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c0eef85b7bf50a4ca45eddcaeaf22bc, type: 3}
+  m_Name: HighTree2
+  m_EditorClassIdentifier: 
+  skipRendering: 0
+  spawnMode: 0
+  GenerateColliders: 1
+  ColliderObject: {fileID: 5985579221303652399, guid: ea672468caf63f94bafa0a9517828126, type: 3}
+  LodGroups: {fileID: 0}
+  LOD:
+  - mesh: {fileID: 3904000302078688973, guid: b09f9fd76663b174d8768c9a02495e3d, type: 3}
+    materials:
+    - {fileID: 2100000, guid: bb34a7917a5b91a4491493e57f9953fa, type: 2}
+    - {fileID: 2100000, guid: b171a857d0952c04e94e5c28bd91cd3b, type: 2}
+  - mesh: {fileID: -5999420298480918403, guid: b09f9fd76663b174d8768c9a02495e3d, type: 3}
+    materials:
+    - {fileID: 2100000, guid: bb34a7917a5b91a4491493e57f9953fa, type: 2}
+    - {fileID: 2100000, guid: b171a857d0952c04e94e5c28bd91cd3b, type: 2}
+  - mesh: {fileID: 4300000, guid: 7543d1cb88704864c8bd4a620a69b90d, type: 2}
+    materials:
+    - {fileID: 2100000, guid: ac0541f5f0ea207499fe74490be4dad6, type: 2}
+  HighLodDistance: 25
+  CrossFadeLODDithering: 1
+  InstanceObject: {fileID: 0}
+  Materials: []
+  ViewDistance: 1000
+  DistanceBetweenItems: 5
+  PositionRandomness: 1
+  VerticalPosition: 0
+  AlignToGround: 1
+  HeightVariation: 0
+  SimplexNoiseSize: 1
+  DensityAffectsHeight: 0
+  MinimumScale: 2
+  MaximumScale: 1.4
+  HalfInstancesAtDistance: 0
+  HalfInstancesDistance: 30
+  CastShadows: 1
+  ShadowsLODOffset: 0
+  _shadowDistance: 100
+  HowToSampleColor: 0
+  SamplingRandomness: 0
+  RemoveAtTextures:
+  - {fileID: 11400000, guid: 5ef72fffa8c672b449a3ed0fc53fe5b0, type: 2}
+  - {fileID: 11400000, guid: 086b42d31400c3a4eaf2407ff36c2fa0, type: 2}
+  - {fileID: 11400000, guid: 276063451bd71d047bcb4858d9c2c56f, type: 2}
+  - {fileID: 11400000, guid: b9bde9b668ca25f4f8c323007c98c55c, type: 2}
+  - {fileID: 11400000, guid: 84f8f12defe7b3446a82132f26e554a2, type: 2}
+  - {fileID: 11400000, guid: 7d57a7c90ef0c764a84016b69fbccc35, type: 2}
+  - {fileID: 11400000, guid: 51080df8fc5931a44ae86b273cfc68fe, type: 2}
+  - {fileID: 11400000, guid: 9031defa826ddfa47a5eae708e1ba067, type: 2}
+  - {fileID: 11400000, guid: 2dfe4b962f795404dba816ca7a1f3390, type: 2}
+  DrawDistances: 0
+  drawBoundingBox: 0

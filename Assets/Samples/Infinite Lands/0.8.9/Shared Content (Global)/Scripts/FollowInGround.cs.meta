@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 8e305d3c44c88e34fac918dab9b4b3cb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Scripts/FollowInGround.cs
+  uploadId: 776017

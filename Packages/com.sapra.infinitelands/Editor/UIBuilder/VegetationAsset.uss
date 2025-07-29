@@ -1,0 +1,21 @@
+.indented{
+    padding-left: 15px;
+}
+
+.rigthSide{
+    margin-left: 10px;
+    margin-top: 10px;
+    margin-right: 5px;
+    width: 250px;
+    -unity-text-align: middle-center;
+    color:rgb(255, 79, 79);
+    font-size: 20px;
+}
+
+.leftSide{
+    width: 100%;
+}
+
+.unity-decorator-drawers-container{
+    font-size: 20px
+}

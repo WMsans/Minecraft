@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 355aae73182dced49bbb81dce2eda49b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Tests/EditorTests/Mocks/MockTerrainControl.cs
+  uploadId: 776017

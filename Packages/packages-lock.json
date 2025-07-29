@@ -26,6 +26,18 @@
         "com.gurbu.gpui-pro": "0.11.2"
       }
     },
+    "com.sapra.infinitelands": {
+      "version": "file:com.sapra.infinitelands",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.burst": "1.8.11",
+        "com.unity.collections": "1.4.0",
+        "com.unity.render-pipelines.core": "12.1.15",
+        "com.unity.searcher": "4.9.2",
+        "com.unity.shadergraph": "12.1.15"
+      }
+    },
     "com.singularitygroup.hotreload": {
       "version": "file:com.singularitygroup.hotreload",
       "depth": 0,

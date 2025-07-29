@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8aeb814720255334f9da8722f01f530c, type: 3}
+  m_Name: FlatWorld
+  m_EditorClassIdentifier: 
+  AutoUpdate: 1
+  position: {x: 93, y: 148}
+  scale: {x: 0.8695652, y: 0.8695652}
+  output:
+    rid: 7283861112718884865
+  nodes:
+  - rid: 7283861112718884865
+  - rid: 7234112080104914944
+  - rid: 7234112080104914945
+  - rid: 7234112080104914946
+  - rid: 7234112080104914947
+  groups: []
+  stickyNotes: []
+  edges:
+  - outputPort:
+      nodeGuid: 57463a6dd1ba1434ba5a6f300589001e
+      fieldName: Output
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+    inputPort:
+      nodeGuid: 029025ce736e8174f9ac01ed8f82d5e7
+      fieldName: Density
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+  - outputPort:
+      nodeGuid: 73c1cda5b85633740acdbeb23152236e
+      fieldName: Output
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+    inputPort:
+      nodeGuid: 0b571164fc557a446b0e738115eb7813
+      fieldName: Density
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+  - outputPort:
+      nodeGuid: 73c1cda5b85633740acdbeb23152236e
+      fieldName: Output
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+    inputPort:
+      nodeGuid: 0d9a04bc76a54894d8479048cac5aebb
+      fieldName: HeightMap
+      listIndex: -1
+      itemIsRearrangable: 0
+      isAddItem: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 7234112080104914944
+      type: {class: ConstantNode, ns: sapra.InfiniteLands, asm: sapra.InfiniteLands}
+      data:
+        guid: 57463a6dd1ba1434ba5a6f300589001e
+        name: ConstantNode
+        expanded: 1
+        position: {x: 113.20674, y: 677.97833}
+        previewPort:
+          nodeGuid: 
+          fieldName: 
+          listIndex: 0
+          itemIsRearrangable: 0
+          isAddItem: 0
+        isValid: 1
+        Value: 1
+    - rid: 7234112080104914945
+      type: {class: AssetOutputNode, ns: sapra.InfiniteLands, asm: sapra.InfiniteLands}
+      data:
+        guid: 0b571164fc557a446b0e738115eb7813
+        name: AssetOutputNode
+        expanded: 1
+        position: {x: 360.92203, y: 494.97827}
+        previewPort:
+          nodeGuid: 
+          fieldName: 
+          listIndex: 0
+          itemIsRearrangable: 0
+          isAddItem: 0
+        isValid: 1
+        Asset: {fileID: 11400000, guid: d6f7bcb4682a25843aeb15a99714efcd, type: 2}
+        <action>k__BackingField: 0
+    - rid: 7234112080104914946
+      type: {class: AssetOutputNode, ns: sapra.InfiniteLands, asm: sapra.InfiniteLands}
+      data:
+        guid: 029025ce736e8174f9ac01ed8f82d5e7
+        name: AssetOutputNode
+        expanded: 1
+        position: {x: 360.92203, y: 634.9783}
+        previewPort:
+          nodeGuid: 
+          fieldName: 
+          listIndex: 0
+          itemIsRearrangable: 0
+          isAddItem: 0
+        isValid: 1
+        Asset: {fileID: 11400000, guid: e2d503f939897ab4a920ebd24cf1c5a8, type: 2}
+        <action>k__BackingField: 0
+    - rid: 7234112080104914947
+      type: {class: PerlinNoiseNode, ns: sapra.InfiniteLands, asm: sapra.InfiniteLands}
+      data:
+        guid: 73c1cda5b85633740acdbeb23152236e
+        name: PerlinNoiseNode
+        expanded: 1
+        position: {x: 107.949265, y: 432.26532}
+        previewPort:
+          nodeGuid: 
+          fieldName: 
+          listIndex: 0
+          itemIsRearrangable: 0
+          isAddItem: 0
+        isValid: 1
+        NoiseType: 1
+        MinMaxHeight: {x: 0, y: 1}
+        TileSize: 100
+        Octaves: 1
+        Rotation: {x: 0, y: 0, z: 0}
+        Lacunarity: 2
+        Persistence: 0.5
+        RidgeMode: 0
+    - rid: 7283861112718884865
+      type: {class: HeightOutputNode, ns: sapra.InfiniteLands, asm: sapra.InfiniteLands}
+      data:
+        guid: 0d9a04bc76a54894d8479048cac5aebb
+        name: HeightOutputNode
+        expanded: 0
+        position: {x: 361, y: 355.00006}
+        previewPort:
+          nodeGuid: 
+          fieldName: 
+          listIndex: 0
+          itemIsRearrangable: 0
+          isAddItem: 0
+        isValid: 1

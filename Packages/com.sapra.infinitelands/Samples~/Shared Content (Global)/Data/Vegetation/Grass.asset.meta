@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 587d188ef0580c0488b37684b079d924
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Data/Vegetation/Grass.asset
+  uploadId: 776017

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7c612e7b47c797540840601db2b53795
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/World Generation (URP)/Scenes/InfiniteLands.unity
+  uploadId: 776017

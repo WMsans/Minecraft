@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a49b7d6988a23854ab27e73655e7e762
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Prefabs/LowTree2.prefab
+  uploadId: 776017

@@ -1,0 +1,16 @@
+{
+    "name": "sapra.InfiniteLands.GenerationBuiltin",
+    "rootNamespace": "",
+    "references": [
+        "GUID:246f75cfc5a346f4b9314dfa85359208"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

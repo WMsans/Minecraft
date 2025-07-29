@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Packages/com.sapra.infinitelands/Editor/UIBuilder/AssetSearchWindow.uss?fileID=7433441132597879392&amp;guid=223b19b786a4ac946a174a748827340a&amp;type=3#AssetSearchWindow" />
+    <ui:VisualElement>
+        <ui:TextField picking-mode="Ignore" name="searchField" style="margin-bottom: 10px;" />
+        <ui:ScrollView name="scrollView" mode="Vertical" />
+    </ui:VisualElement>
+</ui:UXML>

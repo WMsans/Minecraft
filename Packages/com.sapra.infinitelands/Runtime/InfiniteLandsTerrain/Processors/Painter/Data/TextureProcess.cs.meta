@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d774cdab6c1ffca4badfd940d261e3c4
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/InfiniteLandsTerrain/Processors/Painter/Data/TextureProcess.cs
+  uploadId: 776017

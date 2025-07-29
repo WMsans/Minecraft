@@ -1,0 +1,20 @@
+{
+    "name": "sapra.InfiniteLands.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:246f75cfc5a346f4b9314dfa85359208",
+        "GUID:4988cf9794f41d64c884876ab6574b89",
+        "GUID:d8b63aba1907145bea998dd612889d6b"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

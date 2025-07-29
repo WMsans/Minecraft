@@ -1,0 +1,87 @@
+:root {
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 10px;
+}
+
+#searchField {
+    margin-bottom: 10px;
+}
+
+#scrollView {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.grid-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    flex-grow: 1;
+    align-self: auto;
+}
+
+.asset-card {
+    width: 80px;
+    height: 84px;
+    margin: 10px;
+    padding: 5px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: column;
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-left-color: rgb(67, 67, 67);
+    border-right-color: rgb(67, 67, 67);
+    border-top-color: rgb(67, 67, 67);
+    border-bottom-color: rgb(67, 67, 67);
+    background-color: rgb(56, 56, 56);
+}
+
+.asset-card:hover {
+    border-left-color: rgb(108, 108, 108);
+    border-right-color: rgb(108, 108, 108);
+    border-top-color: rgb(108, 108, 108);
+    border-bottom-color: rgb(108, 108, 108);
+    background-color: rgb(65, 65, 65);
+}
+
+.asset-card .preview {
+    width: 47px;
+    height: 47px;
+    margin-top: 4px;
+}
+
+.asset-card .name {
+    margin-top: 4px;
+    margin-right: 0;
+    margin-left: 0;
+    overflow: hidden;
+}
+
+.asset-type-header {
+    font-size: 20px;
+    -unity-font-style: bold;
+}
+
+.pre-selected {
+    opacity: 1;
+    position: relative;
+    background-color: rgb(85, 85, 85);
+}
+
+.bottomButtons{
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.textures{
+    margin-top: 10px;
+    background-color:#313131
+} 

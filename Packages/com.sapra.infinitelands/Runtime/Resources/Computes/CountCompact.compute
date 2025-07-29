@@ -1,0 +1,199 @@
+#pragma kernel InitialCompact
+#pragma kernel Reset
+#pragma kernel Count
+#pragma kernel Sum
+#pragma kernel Compact
+#pragma kernel FillArguments
+#include "..\Include\DataControl.cginc"
+
+#pragma multi_compile_local _ SHADOWS
+
+#define GROUP_SIZE 512
+#define mask 0xFF
+
+struct SumPack{
+    uint startBase;
+    uint endBase;
+
+    uint countBase;
+    uint countTrans;
+};
+
+RWStructuredBuffer<uint> _TargetLODs;
+RWStructuredBuffer<SumPack> _Counters;
+RWStructuredBuffer<SumPack> _ShadowCounters;
+
+RWStructuredBuffer<uint> _Indices;
+RWStructuredBuffer<uint> _ShadowIndices;
+RWStructuredBuffer<uint> _Arguments;
+RWStructuredBuffer<uint> _ShadowArguments;
+
+
+uint _MaxInstances;
+uint _LODCount;
+uint _ShadowLodOffset;
+uint _SubMeshCount; 
+
+
+uint _InstancesPerChunk;
+StructuredBuffer<uint> _ChunksSkipped;
+RWStructuredBuffer<uint> _ReducedIndices;
+
+[numthreads(GROUP_SIZE,1,1)]
+void InitialCompact(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= _MaxInstances)
+        return;
+
+    uint ind = floor(id.x/_InstancesPerChunk);
+    uint skipAmount = _ChunksSkipped[ind];
+    uint trueIndex = id.x+skipAmount*_InstancesPerChunk;
+    _ReducedIndices[id.x] = trueIndex;
+}
+
+void UnMaskBasic(in uint value, out uint LodValue, out uint VisibleNormal, out uint VisibleShadow){
+    LodValue = value & 0xFF;
+    VisibleNormal = (value >> 22) & 1;
+    VisibleShadow = (value >> 31) & 1;
+}
+
+[numthreads(GROUP_SIZE,1,1)]
+void Count(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= _MaxInstances) 
+        return;
+    
+    uint index = _ReducedIndices[id.x];
+    uint LodValue, VisibleNormal, VisibleShadow;
+    UnMaskBasic(_TargetLODs[index], LodValue, VisibleNormal, VisibleShadow);
+
+    if(VisibleNormal > 0){
+        InterlockedAdd(_Counters[LodValue].countBase, 1);
+    }
+    
+    #ifdef SHADOWS
+    if(VisibleShadow > 0){
+        int newIndex = min(LodValue+_ShadowLodOffset, _LODCount-1);
+        InterlockedAdd(_ShadowCounters[newIndex].countBase, 1);
+    }
+    #endif
+
+}
+
+[numthreads(1,1,1)]
+void Sum(uint3 id : SV_DispatchThreadID)
+{
+    uint currentSum = 0;
+    uint currentSumShadows = 0;
+    for(uint x = 0; x < _LODCount; x++){
+        SumPack counter = _Counters[x];
+        counter.startBase = currentSum;
+        currentSum += counter.countBase;
+        counter.endBase = currentSum;
+
+        counter.countTrans = 0;
+        counter.countBase = 0;
+
+        _Counters[x] = counter;
+
+        #ifdef SHADOWS
+        SumPack shadowCounter = _ShadowCounters[x];
+        shadowCounter.startBase = currentSumShadows;
+        currentSumShadows += shadowCounter.countBase;
+        shadowCounter.endBase = currentSumShadows;
+
+        shadowCounter.countTrans = 0;
+        shadowCounter.countBase = 0;
+
+        _ShadowCounters[x] = shadowCounter;
+        #endif
+    }
+}
+
+[numthreads(GROUP_SIZE,1,1)]
+void Compact(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= _MaxInstances) 
+        return;
+    
+    uint index = _ReducedIndices[id.x];
+    uint LodValue;
+    uint Transition;
+    uint ShadowTransition;
+
+    uint VisibleNormal;
+    uint VisibleShadow;
+    UnMask(_TargetLODs[index], LodValue, Transition, VisibleNormal,ShadowTransition, VisibleShadow);
+
+    if(VisibleNormal > 0){
+        int specificIndex;
+        SumPack counterLight = _Counters[LodValue];
+        if(Transition > 0){
+            InterlockedAdd(_Counters[LodValue].countTrans, 1, specificIndex);
+            _Indices[counterLight.endBase-(specificIndex+1)] = index;
+        }else{
+            InterlockedAdd(_Counters[LodValue].countBase, 1, specificIndex);
+            _Indices[counterLight.startBase+specificIndex] = index;
+        }
+    }
+
+    #ifdef SHADOWS
+    if(VisibleShadow > 0){
+        int specificIndex;
+        int newIndex = min(LodValue+_ShadowLodOffset, _LODCount-1);
+        SumPack counterShadow = _ShadowCounters[newIndex];
+        if(ShadowTransition > 0){
+            InterlockedAdd(_ShadowCounters[newIndex].countTrans, 1, specificIndex);
+            _ShadowIndices[counterShadow.endBase-(specificIndex+1)] = index;
+        }else{
+            InterlockedAdd(_ShadowCounters[newIndex].countBase, 1, specificIndex);
+            _ShadowIndices[counterShadow.startBase+specificIndex] = index;
+        }
+    }
+    #endif
+}
+
+[numthreads(1,1,1)]
+void FillArguments(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= _LODCount) return;
+    if(id.y >= _SubMeshCount) return;
+
+    SumPack counter = _Counters[id.x];
+    int instancesToDraw = counter.endBase-counter.startBase;
+    if(id.x > 0){
+        int inTransition = _Counters[id.x-1].countTrans;
+        instancesToDraw += inTransition;
+        _Counters[id.x].startBase -= inTransition;
+    }
+
+    _Arguments[(id.x*_SubMeshCount+id.y)*5+1] = instancesToDraw;
+
+    #ifdef SHADOWS
+    SumPack shadowCounter = _ShadowCounters[id.x];
+    int shadowInstancesToDraw = shadowCounter.endBase-shadowCounter.startBase;
+    if(id.x > 0){
+        int inTransition = _ShadowCounters[id.x-1].countTrans;
+        shadowInstancesToDraw += inTransition;
+        _ShadowCounters[id.x].startBase -= inTransition;
+    }
+
+    _ShadowArguments[(id.x*_SubMeshCount+id.y)*5+1] = shadowInstancesToDraw;
+    #endif
+}
+
+
+[numthreads(1,1,1)]
+void Reset(uint3 id : SV_DispatchThreadID)
+{
+    SumPack counter;
+    counter.countTrans = 0;
+    counter.countBase = 0;
+    counter.startBase = 0;
+    counter.endBase = 0;
+
+    _Counters[id.x] = counter;
+    #ifdef SHADOWS
+    _ShadowCounters[id.x] = counter;
+    #endif
+}

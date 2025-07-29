@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ea672468caf63f94bafa0a9517828126
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Shared Content (Global)/Prefabs/HighTree2.prefab
+  uploadId: 776017

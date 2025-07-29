@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 94ef518be6c6a614e86329fe48c2753f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Grass Interactions (Built-in)/Scripts/MoveAround.cs
+  uploadId: 776017

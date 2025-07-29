@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: eeef800b1260f7f4e899655d0c6f73f1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/InfiniteLandsTerrain/Processors/Vegetation/Draw/DrawingModes/CountCollect/CountedDrawCall.cs
+  uploadId: 776017

@@ -1,0 +1,10 @@
+
+TextInput{
+    -unity-text-align: middle-center !important;
+}
+
+
+TextElement{
+    -unity-text-align: middle-center !important;
+    font-size:20px;
+}

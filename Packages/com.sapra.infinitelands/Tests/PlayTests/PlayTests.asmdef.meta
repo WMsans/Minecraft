@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b6a3b53381720bb42aa58c3d21cd3614
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Tests/PlayTests/PlayTests.asmdef
+  uploadId: 776017

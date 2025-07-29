@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 246f75cfc5a346f4b9314dfa85359208
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/sapra.InfiniteLands.asmdef
+  uploadId: 776017

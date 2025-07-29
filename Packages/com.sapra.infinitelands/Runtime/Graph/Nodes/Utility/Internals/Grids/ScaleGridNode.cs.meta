@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: dae5e16f3a2914540ae7862bb5a8bada
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Graph/Nodes/Utility/Internals/Grids/ScaleGridNode.cs
+  uploadId: 776017

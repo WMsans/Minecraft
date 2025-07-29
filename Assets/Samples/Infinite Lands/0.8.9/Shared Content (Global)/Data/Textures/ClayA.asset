@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96550979f2ba2642936ef68c33d577c, type: 3}
+  m_Name: ClayA
+  m_EditorClassIdentifier: 
+  textures:
+  - type: 0
+    defaultColor: 4
+    texture: {fileID: 2800000, guid: 1b66ba4e76e806c43b0d7cfa01b4fa15, type: 3}
+    textureName: _albedo_textures
+  - type: 1
+    defaultColor: 2
+    texture: {fileID: 2800000, guid: 78b85e1f0a49f824b82f642b42f3c294, type: 3}
+    textureName: _height_textures
+  - type: 2
+    defaultColor: 3
+    texture: {fileID: 2800000, guid: ae797e5ae77d3154c918339d019d71b0, type: 3}
+    textureName: _normal_textures
+  - type: 3
+    defaultColor: 0
+    texture: {fileID: 2800000, guid: 00e6ac02ec8756a4f9c9783700e75423, type: 3}
+    textureName: _occlusion_textures
+  settings:
+    Size: 10
+    NormalStrength: 2

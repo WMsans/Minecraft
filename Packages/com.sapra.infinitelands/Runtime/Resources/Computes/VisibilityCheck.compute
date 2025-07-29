@@ -1,0 +1,382 @@
+#pragma kernel VisibilityCheck
+
+#include "..\Include\Quaternion.cginc"
+#include "..\Include\DataControl.cginc"
+
+#define GROUP_SIZE 512
+
+#pragma multi_compile_local __ CULLING
+#pragma multi_compile_local __ SHADOWS_ENABLED
+#pragma multi_compile_local __ SMALL_OBJECT
+
+struct InstanceData {
+    float3 position;
+    uint2 quaternionScale;
+    uint normalandTexture;
+};
+
+StructuredBuffer<InstanceData> _PerInstanceData;
+StructuredBuffer<uint> _ReducedIndices;
+RWStructuredBuffer<uint> _TargetLODs;
+
+struct Triangle{
+    float3 c1;
+    float3 c2;
+    float3 c3;
+};
+
+StructuredBuffer<Triangle> _FrustrumTriangles;
+float3 _LightDirection;
+
+Texture2D<unorm float> _DepthTexture;
+SamplerState sampler_DepthTexture;
+
+//Terrain parameters
+float3 _MeshOffset;
+float _MeshScale;
+
+//Rendering Parametersç
+float4x4 _MATRIX_VP;
+uint _ItemIndex, _TotalInstancesAdded;
+float3 _CameraPosition;
+
+//Occlusion parameters
+uint _RTSize, _MaxMIPLevel;
+
+//Asset Properties
+float _DistanceBetween, _LodDistance, _ViewDistance, _ShadowDistance, _LODCount, _HalfInstancesDistance;
+float3 _MinBounds, _MaxBounds;
+
+float depthBias;
+
+float SmoothSaw(in float x, float k){
+    float px = PI*x;
+    return acos(tanh(k*sin(px))*cos(px))/PI;
+}
+
+float SmoothFloor(in float x, float strength){ 
+    return x - SmoothSaw(x, strength);
+}
+
+float CalculateLOD(in float dist, in float LodDistance){
+    float lr = log2((dist + LodDistance) / (LodDistance));
+    return clamp(SmoothFloor(lr,10), 0, _LODCount-1);
+}
+
+uint MaskIt(uint NormalIndex, float NormalTransition, uint VisibleNormal, float ShadowTransition, uint VisibleShadow){
+    return (NormalIndex) | 
+        ((uint)floor(NormalTransition*0x3FFF) << 8) | 
+        (uint)(VisibleNormal << 22) | 
+        ((uint)floor(ShadowTransition*0xFF) << 23) | 
+        (uint)(VisibleShadow << 31);
+}
+
+float3 randomID(float3 position){
+    float3 UV = ((position-_MeshOffset)/_MeshScale)+0.5f;
+    uint _TotalInstances = ceil(_MeshScale / _DistanceBetween);
+    uint3 Index = (uint3)UV*_TotalInstances;
+    return randValue(uint3(Index.xz,_ItemIndex));
+}
+
+bool OcclusionCulling(float3 chunkPosition, float sizeValue, float distToCamera) {
+    // Only check above corners
+
+    float3 scaledMaxBounds = _MaxBounds * sizeValue;
+
+    float3 chunkCorners[4];
+    chunkCorners[0] = chunkPosition + float3(-scaledMaxBounds.x, scaledMaxBounds.y, -scaledMaxBounds.z);
+    chunkCorners[1] = chunkPosition + float3(scaledMaxBounds.x, scaledMaxBounds.y, -scaledMaxBounds.z);
+    chunkCorners[2] = chunkPosition + float3(-scaledMaxBounds.x, scaledMaxBounds.y, scaledMaxBounds.z);
+    chunkCorners[3] = chunkPosition + float3(scaledMaxBounds.x, scaledMaxBounds.y, scaledMaxBounds.z);
+
+    float adaptiveDepthBias = depthBias * (1.0 + distToCamera / _ViewDistance);
+
+    for (int i = 0; i < 4; i++) {
+        float4 projectedPos = mul(_MATRIX_VP, float4(chunkCorners[i], 1.0));
+        float2 projectedUV = (projectedPos.xy / projectedPos.w + 1.0) * 0.5;
+
+        float sceneDepth = _DepthTexture.SampleLevel(sampler_DepthTexture, projectedUV, 0).r;
+        float chunkDepth = (projectedPos.z / projectedPos.w);
+
+        if (chunkDepth > sceneDepth - adaptiveDepthBias) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/* bool OcclusionCulling(float3 position, float sizeValue)
+{
+    float3 scaledMinBounds = _MinBounds * sizeValue;
+    float3 scaledMaxBounds = _MaxBounds * sizeValue;
+    float3 BboxMin = position + scaledMinBounds + float3(0, scaledMaxBounds.y * .1f, 0);
+    float3 boxSize = scaledMaxBounds - float3(0, scaledMaxBounds.y * .1f, 0);
+    float3 boxCorners[] = {
+        BboxMin.xyz,
+        BboxMin.xyz + float3(boxSize.x, 0, 0),
+        BboxMin.xyz + float3(0, boxSize.y, 0),
+        BboxMin.xyz + float3(0, 0, boxSize.z),
+        BboxMin.xyz + float3(boxSize.xy, 0),
+        BboxMin.xyz + float3(0, boxSize.yz),
+        BboxMin.xyz + float3(boxSize.x, 0, boxSize.z),
+        BboxMin.xyz + boxSize.xyz
+    };
+    float minZ = 0;
+    float2 minXY = 8;
+    float2 maxXY = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        //transform World space aaBox to NDC
+        float4 clipPos = mul(_MATRIX_VP, float4(boxCorners[i], 1));
+        clipPos.xyz /= clipPos.w;
+        clipPos.xy = clipPos.xy * 0.5f + 0.5f;
+
+        clipPos.z = max(clipPos.z, 0);
+        minXY = min(clipPos.xy, minXY);
+        maxXY = max(clipPos.xy, maxXY);
+
+        minZ = saturate(max(minZ, clipPos.z));
+    }
+
+    float4 boxUVs = float4(minXY, maxXY);
+    int2 size = (maxXY - minXY) * _RTSize;
+
+    //Calcular depth
+    float mip = ceil(log2(max(size.x, size.y)));
+    mip = clamp(mip - 0.5f, 0, _MaxMIPLevel); // Slightly lower mip level for better precision
+
+    // Texel footprint for the lower (finer-grained) level
+    float level_lower = max(mip - 1, 0);
+    float2 scale = exp2(-level_lower);
+    float2 a = floor(boxUVs.xy * scale);
+    float2 b = ceil(boxUVs.zw * scale);
+    float2 dims = b - a;
+
+    // Use the lower level if we only touch <= 2 texels in both dimensions
+    if (dims.x <= 2 && dims.y <= 2)
+        mip = level_lower;
+
+    float4 depths = {
+        _DepthTexture.SampleLevel(sampler_DepthTexture, boxUVs.xy, mip).r,
+        _DepthTexture.SampleLevel(sampler_DepthTexture, boxUVs.zy, mip).r,
+        _DepthTexture.SampleLevel(sampler_DepthTexture, boxUVs.xw, mip).r,
+        _DepthTexture.SampleLevel(sampler_DepthTexture, boxUVs.zw, mip).r
+    };
+
+    float minD = min(min(depths.x, depths.y), min(depths.z, depths.w));    
+    return minZ >= minD && maxXY.y > 0 && minXY.y < 1.2f;
+} */
+
+/* bool isChunkOccluded(float3 chunkPosition) {
+    float4 projectedPos = mul(_MATRIX_VP, float4(chunkPosition, 1.0f));
+    float2 projectedUV = (projectedPos.xy / projectedPos.w + 1.0f) * 0.5f; 
+    
+    float sceneDepth = _DepthTexture.SampleLevel(sampler_DepthTexture, projectedUV, 0).r;
+    float chunkDepth = (projectedPos.z / projectedPos.w);
+
+    return chunkDepth > sceneDepth - 0.001f;
+}
+ */
+bool VisiblePoint(float4x4 MatrixVP, float3 PointPosition){
+    float4 viewspace = mul(MatrixVP, float4(PointPosition,1.0)); //Get the viewspace matrix
+    float3 clipspace = viewspace.xyz; //Save the w valu
+
+    clipspace /= viewspace.w;
+    clipspace.xy = 0.5f*clipspace.xy + 0.5f;
+    clipspace.z = viewspace.w;
+
+    return clipspace.x >= -0.2f && clipspace.x <= 1.2f && clipspace.z >= -0.1f;
+}
+bool intersect(float2 origin, float2 direction)
+{
+    float2 invDir = 1.0f/direction;
+    float tmin, tmax, tymin, tymax;
+    int signX = invDir.x >= 0;
+    int signY = invDir.y >= 0;
+
+    tmin = (1-signX- origin.x) * invDir.x;
+    tmax = (signX - origin.x) * invDir.x;
+    tymin = (1-signY - origin.y) * invDir.y;
+    tymax = (signY - origin.y) * invDir.y;
+    
+    if ((tmin > tymax) || (tymin > tmax) || tmax < 0 || tymax < 0)
+        return false;
+
+    return true;
+}
+
+bool VisibleShadows(float4x4 vpMatrix, float3 origin, float3 direction)
+{
+    // Transform the origin into clip space
+    float4 originClip = mul(vpMatrix, float4(origin.xyz, 1.0));
+
+    // Transform a point along the ray's direction into clip space
+    float3 endpoint = origin + direction;
+    float4 endpointClip = mul(vpMatrix, float4(endpoint.xyz, 1.0f));
+
+    float3 originNDC = originClip.xyz / originClip.w;
+    float3 endpointNDC = endpointClip.xyz / endpointClip.w;
+
+    // Convert to screen space ([0, 1])
+    originNDC = (originNDC + 1) * 0.5f;
+    endpointNDC = (endpointNDC + 1) * 0.5f;
+
+    // Check intersection with screen bounds
+    return intersect(originNDC.xy, normalize(endpointNDC - originNDC).xy);
+}
+
+// Step 3: Ray-triangle intersection test
+bool RayIntersectsTriangle(float3 origin, float3 direction, float3 v0, float3 v1, float3 v2)
+{
+    // Moller-Trumbore intersection algorithm
+    float3 edge1 = v1 - v0;
+    float3 edge2 = v2 - v0;
+
+
+    float3 h = cross(direction, edge2);
+    float a = dot(edge1, h);
+
+    // Check if the ray is parallel to the triangle
+    if (a > -0.00001f && a < 0.00001f) return false;
+
+    float f = 1.0f / a;
+    float3 s = origin - v0;
+    float u = f * dot(s, h);
+
+    if (u < 0.0f || u > 1.0f) return false;
+
+    float3 q = cross(s, edge1);
+    float v = f * dot(direction, q);
+
+    if (v < 0.0f || u + v > 1.0f) return false;
+
+    // Compute the distance along the ray to the intersection point
+    float t = f * dot(edge2, q);
+
+    return t > 0.00001f;
+}
+
+bool VisibleShadows(float3 origin){
+    for(int i = 0; i < 12; i++){
+        Triangle cornerns = _FrustrumTriangles[i];
+        if (RayIntersectsTriangle(origin, _LightDirection, cornerns.c1, cornerns.c2, cornerns.c3)) 
+            return true;
+    }
+    return false;
+}
+
+bool VisibleShadowsFull(float3 position, float3 sizeValue, float4 rotation)
+{
+    float3 scaledMinBounds = _MinBounds * sizeValue;
+    float3 scaledMaxBounds = _MaxBounds * sizeValue;
+    float3 BboxMin = scaledMinBounds + float3(0, scaledMaxBounds.y * .1f, 0);
+    float3 boxSize = scaledMaxBounds - float3(0, scaledMaxBounds.y * .1f, 0);
+    float3 boxCorners[] = {
+        BboxMin.xyz,
+        BboxMin.xyz + float3(boxSize.x, 0, 0),
+        BboxMin.xyz + float3(0, boxSize.y, 0),
+        BboxMin.xyz + float3(0, 0, boxSize.z),
+        BboxMin.xyz + float3(boxSize.xy, 0),
+        BboxMin.xyz + float3(0, boxSize.yz),
+        BboxMin.xyz + float3(boxSize.x, 0, boxSize.z),
+        BboxMin.xyz + boxSize.xyz,
+
+    };
+    for(int x = 0; x < 8; x++){
+        for(int i = 0; i < 12; i++){
+            Triangle cornerns = _FrustrumTriangles[i];
+            if (RayIntersectsTriangle(rotate_vector(boxCorners[x],rotation)+position, _LightDirection, cornerns.c1, cornerns.c2, cornerns.c3)) 
+                return true;
+        }
+/*         if(VisibleShadows(_MATRIX_VP, rotate_vector(boxCorners[x],rotation)+position, _LightDirection))
+            return true; */
+    }
+    return false;
+}
+
+
+uint murmurHash3(int input) {
+	uint h = abs(input);
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae3d;
+	h ^= h >> 16;
+	return h;
+}
+
+[numthreads(GROUP_SIZE,1,1)]
+void VisibilityCheck(uint3 id: SV_DISPATCHTHREADID)
+{
+    if (id.x >= _TotalInstancesAdded)
+        return;
+    
+    uint index = _ReducedIndices[id.x];     
+    InstanceData data = _PerInstanceData[index];
+
+    float3 position = data.position;
+    bool isVisible;
+    UnpackIsValid(data.normalandTexture, isVisible);   
+    if(!isVisible){
+        _TargetLODs[index] = 0;
+        return;
+    }
+
+    //Scale it accordingly
+    float4 rotation;
+	float3 size;
+	UnpackRotationScale(data.quaternionScale, rotation, size);
+
+
+    float dist = distance(_CameraPosition, position); 
+    int ValidNormal = dist < _ViewDistance;
+    int ValidShadows = 0;
+    #if SHADOWS_ENABLED
+    ValidShadows = dist < _ShadowDistance;
+    #endif
+
+    #if CULLING
+        #if SMALL_OBJECT
+            if(ValidNormal){
+                ValidNormal *= VisiblePoint(_MATRIX_VP, position);
+            } 
+        #else
+            float3 scaledMinBounds = _MinBounds * size+position;
+            float3 scaledMaxBounds = _MaxBounds * size+position;
+            if(ValidNormal){
+                ValidNormal *= (VisiblePoint(_MATRIX_VP, scaledMinBounds) || VisiblePoint(_MATRIX_VP, scaledMaxBounds)) + (dist < size.y * 10);
+            }   
+/*             if(ValidNormal){
+                ValidNormal *= OcclusionCulling(position, size, dist);
+            }  */
+        #endif
+
+        #if SHADOWS_ENABLED
+        if(ValidShadows){
+            ValidShadows *= VisibleShadowsFull(position, size, rotation); 
+            ValidShadows += ValidNormal;
+        }
+        #endif
+    #endif
+
+    uint halfer = 1 << uint(floor(dist / _HalfInstancesDistance));
+    bool insideDensityLevel = murmurHash3(index * 12894) % halfer != 0;
+
+    if((ValidNormal == 0 && ValidShadows == 0) || insideDensityLevel){
+        _TargetLODs[index] = 0;
+        return;
+    }
+
+
+    float NormalLOD = CalculateLOD(dist, _LodDistance);
+    uint lod = (uint)floor(NormalLOD+0.01f);
+    float transition = saturate(NormalLOD-lod);
+
+    float farawayDisappear = smoothstep(_ViewDistance*0.5f, _ViewDistance, dist);
+    transition = saturate(max(transition, farawayDisappear));
+
+    float shadowTransition = max(transition,saturate(smoothstep(_ShadowDistance*0.5f, _ShadowDistance, dist)));
+    _TargetLODs[index] = MaskIt(lod,transition,saturate(ValidNormal), shadowTransition, saturate(ValidShadows));
+}

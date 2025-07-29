@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 34bd2c237369885429cd1930e0c6bc06
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Samples~/Grass Interactions (Built-in)/Scenes/Displace
+    Test.unity
+  uploadId: 776017

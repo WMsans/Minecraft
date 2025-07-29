@@ -1,0 +1,53 @@
+{
+  "name": "com.sapra.infinitelands",
+  "displayName": "Infinite Lands",
+  "version": "0.8.9",
+  "description": "This package will provide the tools necessary to build an optimized procedural world. It makes use of Jobs and the Burst Compiler to generate the different meshes needed for the generation of the world, making use of a simple Node Editor while also providing an optimized Vegetation Placer that uses GPU instancing to stay light-weight.",
+  "samples": [
+    {
+      "displayName": "Shared Content (Global)",
+      "description": "REQUIRED FOR ALL WORLD GENERATION SAMPLES. Contains the data, materials, prefabs, etc... that are used in each of the World Generation Samples",
+      "path": "Samples~/Shared Content (Global)"
+    },
+    {
+      "displayName": "World Generation (Built-in)",
+      "description": "Requires Shared Content (Global). Sample scenes showing an example of World Generation in Built-in",
+      "path": "Samples~/World Generation (Built-in)"
+    },
+    {
+      "displayName": "World Generation (URP)",
+      "description": "Requires Shared Content (Global). Sample scenes showing an example of World Generation in URP",
+      "path": "Samples~/World Generation (URP)"
+    },
+    {
+      "displayName": "World Generation (HDRP)",
+      "description": "Requires Shared Content (Global). Sample scenes showing an example of World Generation in HDRP",
+      "path": "Samples~/World Generation (HDRP)"
+    },
+    {
+      "displayName": "Grass Interactions (Built-in)",
+      "description": "Sample scenes showing an example of Grass Displacement in Built-in",
+      "path": "Samples~/Grass Interactions (Built-in)"
+    }
+  ],
+  "unity": "2021.3",
+  "keywords": [
+    "Procedural",
+    "Jobs",
+    "Burst",
+    "Node Editor"
+  ],
+  "documentationUrl": "https://ensapra.com/packages/infinite_lands",
+  "changelogUrl": "https://ensapra.com/packages/infinite_lands/changelog.html",
+  "author": {
+    "name": "Sapra",
+    "url": "https://ensapra.com/"
+  },
+  "dependencies": {
+    "com.unity.burst": "1.8.11",
+    "com.unity.collections": "1.4.0",
+    "com.unity.render-pipelines.core": "12.1.15",
+    "com.unity.searcher": "4.9.2",
+    "com.unity.shadergraph": "12.1.15"
+  }
+}

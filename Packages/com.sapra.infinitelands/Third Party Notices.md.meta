@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7bff8d7571d39de4ebd947e39996782f
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Third Party Notices.md
+  uploadId: 776017

@@ -1,0 +1,14 @@
+GridBackground {
+    --grid-background-color: #282828;
+    --line-color: rgba(193, 196, 192, 0.01);
+    --thick-line-color: rgba(193, 196, 192, 0.05);
+    --spacing: 10;
+}
+
+TemplateContainer Label{
+    margin-top: 10px;
+}
+
+.unity-object-field__label{
+    min-width: 50px;
+}

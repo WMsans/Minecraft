@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="Layout" style="flex-grow: 1; height: auto; max-height: none; min-height: auto; visibility: visible; overflow: hidden;">
+        <ui:Label tabindex="-1" text="Export Data" parse-escape-sequences="true" display-tooltip-when-elided="true" style="font-size: 18px; margin-bottom: 0; align-items: center; align-self: auto; -unity-text-align: middle-center; padding-bottom: 10px; padding-top: 10px;" />
+        <uie:ObjectField label="Terrain Generator" type="sapra.InfiniteLands.TerrainGenerator, sapra.InfiniteLands" name="generator" style="margin-bottom: 14px;" />
+        <ui:VisualElement name="Settings" style="flex-grow: 1; align-items: flex-start; align-self: center; flex-direction: column; flex-wrap: nowrap; height: 127px; width: 80%; padding-top: 10px; padding-bottom: 10px; max-height: none;">
+            <ui:Label tabindex="-1" text="Settings" parse-escape-sequences="true" display-tooltip-when-elided="true" style="margin-bottom: 10px; -unity-text-align: upper-center; align-self: center; font-size: 14px; -unity-font-style: italic; margin-top: 0;" />
+            <ui:DropdownField label="Export Mode" name="exporter" index="0" style="width: 100%;" />
+            <ui:Label tabindex="-1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." parse-escape-sequences="true" display-tooltip-when-elided="true" name="description" style="width: 90%; align-items: center; align-self: center; border-left-color: rgb(159, 159, 159); border-right-color: rgb(159, 159, 159); border-top-color: rgb(159, 159, 159); border-bottom-color: rgb(159, 159, 159); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 1px; border-top-right-radius: 1px; border-bottom-right-radius: 1px; border-bottom-left-radius: 1px; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; color: rgba(200, 200, 200, 0.67); background-color: rgb(70, 70, 70); -unity-font-style: italic; margin-top: 2px; margin-right: 2px; margin-bottom: 2px; margin-left: 2px; white-space: normal;" />
+            <ui:DropdownField label="Quality" name="quality" index="0" style="width: 100%;" />
+            <ui:FloatField label="Scale" value="42,2" name="scale" style="width: 100%;" />
+            <ui:IntegerField label="Seed" value="42" name="seed" style="width: 100%;" />
+            <ui:Vector2Field label="Position" name="position" style="width: 100%;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="ExportButtons" style="flex-grow: 1; flex-direction: row; justify-content: center; align-items: flex-start; height: auto; align-self: stretch;">
+            <ui:Button text="Cancel" parse-escape-sequences="true" display-tooltip-when-elided="true" name="cancel" style="padding-right: 20px; padding-left: 20px;" />
+            <ui:Button text="Export" parse-escape-sequences="true" display-tooltip-when-elided="true" name="export" style="padding-right: 20px; padding-left: 20px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

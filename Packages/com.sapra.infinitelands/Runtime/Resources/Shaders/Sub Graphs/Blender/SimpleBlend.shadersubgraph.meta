@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: b0c494802357e6e4b8e3d26e418021ea
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 60072b568d64c40a485e0fc55012dc9f, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276010
+  packageName: 'Infinite Lands: Node-Based Procedural World Generator'
+  packageVersion: 0.8.9
+  assetPath: Packages/com.sapra.infinitelands/Runtime/Resources/Shaders/Sub Graphs/Blender/SimpleBlend.shadersubgraph
+  uploadId: 776017

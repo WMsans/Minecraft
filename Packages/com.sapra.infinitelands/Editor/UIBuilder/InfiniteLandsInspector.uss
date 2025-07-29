@@ -1,0 +1,96 @@
+.GenerationButtons{
+    margin-top: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.GenerationButtons Button{
+    height: 40px;
+    width: 150px;
+}
+
+.title {
+    margin-top: 10px;
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: white;
+    margin-bottom: 5px;
+}
+
+.templateField{
+    flex-direction: row;
+    align-items: flex-end;
+    margin-right: 5px;
+}
+
+.templateField Label{
+    padding-bottom: 5px;
+}
+.templateField PropertyField{
+    min-width: 120px;
+}
+
+.componentTitle{
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.enabled {
+    opacity: 0.5;
+    background-color: green;
+}
+.property-container{
+    margin-left: 30px;
+    margin-bottom: 10px;
+}
+.no-properties-label {
+    -unity-font-style: italic;
+    opacity: .5;
+    padding-top: 5px;
+}
+
+.header-container {
+    flex-direction: row;
+    height: 22px;
+    align-items: center;
+    background-color: rgb(61, 61, 61);
+    padding-left: 4px;
+    padding-right: 4px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(26, 26, 26);
+}
+
+.header-container:hover {
+    background-color: rgb(71, 71, 71);
+}
+
+.label-button {
+    flex-grow: 1;
+    -unity-text-align: middle-left;
+    padding-left: 8px;
+    background-color: transparent;
+    border-width: 0px;
+    color: rgb(242, 242, 242);
+    -unity-font-style: bold;
+}
+
+.remove-button {
+    width: 60px;
+    margin-left: 4px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+}
+
+.remove-button:enabled {
+    background-color: rgb(104, 41, 41);
+}
+.remove-button:enabled:hover {
+    background-color: rgb(161, 38, 38);
+}
+
+.remove-button:disabled {
+    background-color: rgb(61, 61, 61);
+}
