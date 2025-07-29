@@ -21,12 +21,14 @@ public class OctreeTerrainManager : MonoBehaviour
     [Header("Chunk Settings")]
     public Chunk chunkPrefab;
     public int entityProcessingDepth = 2;
+    public string worldName = "Za Warudo";
 
     private NativeList<OctreeNode> nodes;
     private Dictionary<int, Chunk> activeChunks;
     private Pool<Chunk> chunkPool;
 
     private TerrainGenerator terrainGenerator;
+    private ChunkDataManager chunkDataManager;
 
     private Dictionary<int, (JobHandle jobHandle, Chunk chunk, Chunk.MeshData meshData)> generationJobs;
     private JobHandle applyModificationsHandle;
@@ -44,9 +46,6 @@ public class OctreeTerrainManager : MonoBehaviour
         public byte newVoxelType;
     }
     private NativeList<TerrainModification> terrainModifications;
-
-    private Dictionary<int, ChunkData> activeChunkData;
-    private Dictionary<int, Chunk.MeshData> activeMeshData;
 
     // Dictionary to track children that need to be destroyed after a parent merge is complete.
     // Key: parent node index, Value: children start index
@@ -73,6 +72,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
         terrainGenerator = new TerrainGenerator(terrainGraph);
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        chunkDataManager = new ChunkDataManager(worldName);
 
         chunkPool = new Pool<Chunk>(() =>
         {
@@ -92,14 +92,10 @@ public class OctreeTerrainManager : MonoBehaviour
     {
         nodes = new NativeList<OctreeNode>(Allocator.Persistent);
         activeChunks = new Dictionary<int, Chunk>();
-        activeChunkData = new Dictionary<int, ChunkData>();
         generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
         terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
-        
-        activeMeshData = new Dictionary<int, Chunk.MeshData>();
-        activeChunkData = new Dictionary<int, ChunkData>();
     }
 
     private void InitializeMarchingCubesTables()
@@ -119,18 +115,6 @@ public class OctreeTerrainManager : MonoBehaviour
             genJob.meshData.Dispose();
         }
         generationJobs.Clear();
-        
-        foreach (var meshData in activeMeshData.Values)
-        {
-            meshData.Dispose();
-        }
-        activeMeshData.Clear();
-
-        foreach (var data in activeChunkData.Values)
-        {
-            data.Dispose();
-        }
-        activeChunkData.Clear();
 
         if (nodes.IsCreated) nodes.Dispose();
         if (triangulationTable.IsCreated) triangulationTable.Dispose();
@@ -200,20 +184,21 @@ public class OctreeTerrainManager : MonoBehaviour
             {
                 chunk.ApplyGeneratedMesh(meshData);
 
-                if (activeMeshData.ContainsKey(index))
-                {
-                    activeMeshData[index].Dispose();
-                }
-                activeMeshData[index] = meshData;
+                var chunkData = chunkDataManager.GetChunkData(index);
+                chunkData.vertices.Clear();
+                chunkData.vertices.AddRange(meshData.vertices.AsArray());
+                chunkData.triangles.Clear();
+                chunkData.triangles.AddRange(meshData.triangles.AsArray());
             }
-            else
+            
+            if (meshData.IsCreated) meshData.Dispose();
+            
+            if (!activeChunks.ContainsKey(index))
             {
-                if (meshData.IsCreated) meshData.Dispose();
                 chunkPool.Return(chunk);
             }
-            
+
             // Cleanup Case 1: A child of a subdivision finished generating.
-            
             if (subdivisionParentMap.Remove(index, out int parentNodeIndex)) // Use .Remove to ensure we process each child only once
             {
                 HandleChildCompletion(parentNodeIndex);
@@ -249,12 +234,6 @@ public class OctreeTerrainManager : MonoBehaviour
                 nodes[index] = node;
 
                 pendingMergeCleanup.Remove(index);
-            }
-
-            if (activeChunkData.TryGetValue(index, out var chunkData))
-            {
-                chunkData.Dispose();
-                activeChunkData.Remove(index);
             }
         }
     }
@@ -320,9 +299,7 @@ public class OctreeTerrainManager : MonoBehaviour
         {
             var node = nodes[nodeIndex];
 
-            var chunkData = new ChunkData();
-            chunkData.Allocate();
-            activeChunkData[nodeIndex] = chunkData;
+            var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
             var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
@@ -344,7 +321,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
             var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
             generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
-            SpawnEntitiesForChunk(nodeIndex);
+            SpawnEntitiesForChunk(nodeIndex, chunkData);
         }
     }
 
@@ -372,17 +349,8 @@ public class OctreeTerrainManager : MonoBehaviour
             chunkPool.Return(chunk);
             activeChunks.Remove(nodeIndex);
         }
-        if (activeMeshData.TryGetValue(nodeIndex, out var meshData))
-        {
-            meshData.Dispose();
-            activeMeshData.Remove(nodeIndex);
-        }
-    
-        if (activeChunkData.TryGetValue(nodeIndex, out var data))
-        {
-            data.Dispose();
-            activeChunkData.Remove(nodeIndex);
-        }
+        
+        chunkDataManager.UnloadChunkData(nodeIndex);
         
         if (subdivisionParentMap.Remove(nodeIndex, out int parentNodeIndex))
         {
@@ -390,9 +358,9 @@ public class OctreeTerrainManager : MonoBehaviour
         }
     }
     
-    private void SpawnEntitiesForChunk(int nodeIndex)
+    private void SpawnEntitiesForChunk(int nodeIndex, ChunkData chunkData)
     {
-        List<EntityData> entitiesToSpawn = LoadEntityDataForChunk(nodeIndex);
+        var entitiesToSpawn = LoadEntityDataForChunk(nodeIndex, chunkData);
 
         foreach (var data in entitiesToSpawn)
         {
@@ -450,14 +418,10 @@ public class OctreeTerrainManager : MonoBehaviour
         entityManager.DestroyEntity(query);
     }
 
-    // Placeholder for your chunk data loading logic
-    private List<EntityData> LoadEntityDataForChunk(int nodeIndex)
+    private NativeList<EntityData> LoadEntityDataForChunk(int nodeIndex, ChunkData chunkData)
     {
-        // TODO: Implement logic to load entity data from a file based on nodeIndex.
-        // For now, return an empty list.
-        return new List<EntityData>();
+        return chunkData.entities;
     }
-
     
     /// <summary>
     /// Handles the completion of a child chunk from a subdivision.
@@ -545,18 +509,10 @@ public class OctreeTerrainManager : MonoBehaviour
             GenerateChunk(nodeIndex);
             return;
         }
-
-        if (activeChunkData.TryGetValue(nodeIndex, out var oldData))
-        {
-            oldData.Dispose();
-            activeChunkData.Remove(nodeIndex);
-        }
-
+        
         var node = nodes[nodeIndex];
 
-        var chunkData = new ChunkData();
-        chunkData.Allocate();
-        activeChunkData[nodeIndex] = chunkData;
+        var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
         var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
@@ -576,9 +532,15 @@ public class OctreeTerrainManager : MonoBehaviour
 
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
+    
     public bool Raycast(Ray ray, out BurstRaycast.RaycastHit hit)
     {
-        return BurstRaycast.Raycast(ray, nodes, activeMeshData, out hit);
+        var chunkDataDict = new Dictionary<int, ChunkData>();
+        foreach (var chunk in activeChunks)
+        {
+            chunkDataDict.Add(chunk.Key, chunkDataManager.GetChunkData(chunk.Key));
+        }
+        return BurstRaycast.Raycast(ray, nodes, chunkDataDict, out hit);
     }
 
     private void OnDrawGizmos()

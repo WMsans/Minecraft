@@ -15,7 +15,7 @@ public static class BurstRaycast
         public float3 normal;
     }
 
-    public static bool Raycast(Ray ray, NativeList<OctreeNode> nodes, Dictionary<int, Chunk.MeshData> activeMeshData, out RaycastHit hit)
+    public static bool Raycast(Ray ray, NativeList<OctreeNode> nodes, Dictionary<int, ChunkData> chunkData, out RaycastHit hit)
     {
         var intersectingNodeIndices = new List<int>();
         var stack = new Stack<int>();
@@ -37,7 +37,7 @@ public static class BurstRaycast
 
             if (node.isLeaf)
             {
-                if (activeMeshData.ContainsKey(nodeIndex))
+                if (chunkData.ContainsKey(nodeIndex))
                 {
                     intersectingNodeIndices.Add(nodeIndex);
                 }
@@ -64,9 +64,9 @@ public static class BurstRaycast
         int totalTriangleCount = 0;
         foreach (var nodeIndex in intersectingNodeIndices)
         {
-            if (activeMeshData.TryGetValue(nodeIndex, out var meshData))
+            if (chunkData.TryGetValue(nodeIndex, out var data))
             {
-                totalTriangleCount += meshData.triangles.Length / 3;
+                totalTriangleCount += data.triangles.Length / 3;
             }
         }
         
@@ -82,19 +82,19 @@ public static class BurstRaycast
 
         foreach (var nodeIndex in intersectingNodeIndices)
         {
-            var meshData = activeMeshData[nodeIndex];
+            var data = chunkData[nodeIndex];
 
-            if (meshData.triangles.Length > 0)
+            if (data.triangles.Length > 0)
             {
                 var job = new RaycastJob
                 {
                     rayOrigin = ray.origin,
                     rayDirection = ray.direction,
-                    vertices = meshData.vertices.AsDeferredJobArray(),
-                    triangles = meshData.triangles.AsDeferredJobArray(),
+                    vertices = data.vertices.AsDeferredJobArray(),
+                    triangles = data.triangles.AsDeferredJobArray(),
                     hits = hits.AsParallelWriter()
                 };
-                jobHandle = job.Schedule(meshData.triangles.Length / 3, 32, jobHandle);
+                jobHandle = job.Schedule(data.triangles.Length / 3, 32, jobHandle);
             }
         }
 
