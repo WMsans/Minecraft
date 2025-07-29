@@ -5,6 +5,8 @@ using Unity.Mathematics;
 using Unity.Jobs;
 using System.Threading.Tasks;
 using Unity.Burst;
+using Unity.Entities;
+using Unity.Transforms;
 
 public class OctreeTerrainManager : MonoBehaviour
 {
@@ -18,6 +20,7 @@ public class OctreeTerrainManager : MonoBehaviour
     public TerrainGraph terrainGraph;
     [Header("Chunk Settings")]
     public Chunk chunkPrefab;
+    public int entityProcessingDepth = 2;
 
     private NativeList<OctreeNode> nodes;
     private Dictionary<int, Chunk> activeChunks;
@@ -53,6 +56,8 @@ public class OctreeTerrainManager : MonoBehaviour
     // Key: child node index, Value: parent node index
     private Dictionary<int, int> subdivisionParentMap = new Dictionary<int, int>();
     private Dictionary<int, int> subdivisionCompletionCounter = new Dictionary<int, int>();
+    
+    private EntityManager entityManager;
 
     private void Awake()
     {
@@ -67,6 +72,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }
 
         terrainGenerator = new TerrainGenerator(terrainGraph);
+        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         chunkPool = new Pool<Chunk>(() =>
         {
@@ -338,6 +344,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
             var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
             generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
+            SpawnEntitiesForChunk(nodeIndex);
         }
     }
 
@@ -351,6 +358,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void DestroyChunk(int nodeIndex)
     {
+        DestroyEntitiesForChunk(nodeIndex);
         if (generationJobs.TryGetValue(nodeIndex, out var job))
         {
             job.jobHandle.Complete();
@@ -381,6 +389,75 @@ public class OctreeTerrainManager : MonoBehaviour
             HandleChildCompletion(parentNodeIndex);
         }
     }
+    
+    private void SpawnEntitiesForChunk(int nodeIndex)
+    {
+        List<EntityData> entitiesToSpawn = LoadEntityDataForChunk(nodeIndex);
+
+        foreach (var data in entitiesToSpawn)
+        {
+            Entity newEntity = entityManager.CreateEntity();
+            entityManager.AddComponentData(newEntity, new EntityType { Value = data.entityType });
+            entityManager.AddComponentData(newEntity, new LocalTransform { Position = data.position, Scale = 1f, Rotation = quaternion.identity });
+            entityManager.AddComponentData(newEntity, new Velocity { Value = data.velocity });
+            entityManager.AddComponentData(newEntity, new Health { Value = data.health, MaxValue = 100 });
+            entityManager.AddSharedComponent(newEntity, new ChunkOwner { NodeIndex = nodeIndex });
+        }
+    }
+
+    public List<int> GetEntityProcessingChunks()
+    {
+        var processingChunks = new List<int>();
+        var stack = new Stack<int>();
+
+        if (nodes.IsCreated && nodes.Length > 0)
+        {
+            stack.Push(0); 
+        }
+
+        while (stack.Count > 0)
+        {
+            int nodeIndex = stack.Pop();
+            var node = nodes[nodeIndex];
+
+            
+            if (node.depth >= entityProcessingDepth)
+            {
+                processingChunks.Add(nodeIndex);
+                continue; 
+            }
+            
+            if (!node.isLeaf)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    stack.Push(node.childrenIndex + i);
+                }
+            }
+            else 
+            {
+                processingChunks.Add(nodeIndex);
+            }
+        }
+
+        return processingChunks;
+    }
+
+    private void DestroyEntitiesForChunk(int nodeIndex)
+    {
+        EntityQuery query = entityManager.CreateEntityQuery(typeof(ChunkOwner));
+        query.SetSharedComponentFilter(new ChunkOwner { NodeIndex = nodeIndex });
+        entityManager.DestroyEntity(query);
+    }
+
+    // Placeholder for your chunk data loading logic
+    private List<EntityData> LoadEntityDataForChunk(int nodeIndex)
+    {
+        // TODO: Implement logic to load entity data from a file based on nodeIndex.
+        // For now, return an empty list.
+        return new List<EntityData>();
+    }
+
     
     /// <summary>
     /// Handles the completion of a child chunk from a subdivision.
