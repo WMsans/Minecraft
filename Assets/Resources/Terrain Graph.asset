@@ -13,77 +13,15 @@ MonoBehaviour:
   m_Name: Terrain Graph
   m_EditorClassIdentifier: 
   nodes:
-  - guid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
-    layerType: BlockTypeTerrainLayer
-    position: {x: 784.6667, y: 244}
-    properties:
-    - 5
-    - 10
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
   - guid: b2e738b4-5241-4453-a677-63953b6a63ad
     layerType: FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
-    position: {x: 296.66666, y: 234.66666}
+    position: {x: 241.33333, y: 234.66666}
     properties:
     - 0
     - 0
     - 0
     - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  - guid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
-    layerType: ErosionTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
-    position: {x: 1029.3334, y: 234.66666}
-    properties:
-    - 0.005
-    - 50
-    - 20
-    - 4
-    - 2
-    - 0.5
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  - guid: 5506f28c-9790-42e5-98fc-9a013201fb28
-    layerType: ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
-    position: {x: 1280, y: 234.66666}
-    properties:
-    - 70
-    - 10
-    - 0.05
-    - 20
     - 0
     - 0
     - 0
@@ -117,20 +55,37 @@ MonoBehaviour:
     - 0
     - 0
     - 0
+  - guid: b82157df-1ec3-48e2-9417-e96ceca367f8
+    layerType: ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    position: {x: 772.6667, y: 234.66666}
+    properties:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
   edges:
   - outputNodeGuid: b2e738b4-5241-4453-a677-63953b6a63ad
     inputNodeGuid: f54a4171-6906-4254-b054-fdde67010e26
   - outputNodeGuid: f54a4171-6906-4254-b054-fdde67010e26
-    inputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
-  - outputNodeGuid: f91cb808-c94b-4c0e-9bbc-2f62c25a864e
-    inputNodeGuid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
-  - outputNodeGuid: 1aa10ca4-f296-4ef7-bc52-1a2eb4e1ad18
-    inputNodeGuid: 5506f28c-9790-42e5-98fc-9a013201fb28
+    inputNodeGuid: b82157df-1ec3-48e2-9417-e96ceca367f8
   rootNode:
     guid: b2e738b4-5241-4453-a677-63953b6a63ad
     layerType: FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
-    position: {x: 296.66666, y: 234.66666}
+    position: {x: 241.33333, y: 234.66666}
     properties:
     - 0
     - 0
@@ -149,10 +104,12 @@ MonoBehaviour:
     - 0
     - 0
   layerTypeNames:
+  - ApplyVegetationTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    PublicKeyToken=null
+  - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ApplySnowTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-  - ApplyVegetationTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+  - ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
     PublicKeyToken=null
   - FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ErosionTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-  - BlockTypeTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
