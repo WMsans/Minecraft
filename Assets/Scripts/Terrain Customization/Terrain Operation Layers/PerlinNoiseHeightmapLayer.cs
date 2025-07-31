@@ -1,3 +1,4 @@
+using System;
 using Icaria.Engine.Procedural;
 using Unity.Burst;
 using Unity.Collections;
@@ -7,7 +8,7 @@ using Unity.Mathematics;
 public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
 {
     [BurstCompile]
-    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale)
+    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale, float* inputHeightmap, int inputHeightmapLength)
     {
         if (!layer.enabled) return;
 
@@ -58,4 +59,6 @@ public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
     }
 
     public static string[] Fields() => new[] { "Noise Scale", "Noise Strength" };
+    public static string[] InputPorts() => Array.Empty<string>();
+    public static string[] OutputPorts() => new[] { "Out" };
 }

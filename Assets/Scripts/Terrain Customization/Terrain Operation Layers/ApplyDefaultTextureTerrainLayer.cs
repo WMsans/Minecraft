@@ -10,7 +10,7 @@ using UnityEngine;
 public unsafe struct ApplyDefaultTextureTerrainLayer : ITerrainLayer
 {
     [BurstCompile]
-    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength)
+    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength, float* inputHeightmap, int inputHeightmapLength)
     {
         if (!layer.enabled) return;
 
@@ -36,8 +36,7 @@ public unsafe struct ApplyDefaultTextureTerrainLayer : ITerrainLayer
         return layer;
     }
     
-    /// <summary>
-    /// Defines the user-facing names for the layer's properties.
-    /// </summary>
     public static string[] Fields() => Array.Empty<string>();
+    public static string[] InputPorts() => new[] { "In" };
+    public static string[] OutputPorts() => new[] { "Out" };
 }

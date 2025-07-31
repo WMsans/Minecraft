@@ -57,7 +57,9 @@ public class TerrainGraphView : GraphView
 
             if (outputNodeView != null && inputNodeView != null)
             {
-                var edge = outputNodeView.outputPort.ConnectTo(inputNodeView.inputPort);
+                var outputPort = outputNodeView.outputPorts.First(p => p.portName == edgeData.outputPortName);
+                var inputPort = inputNodeView.inputPorts.First(p => p.portName == edgeData.inputPortName);
+                var edge = outputPort.ConnectTo(inputPort);
                 AddElement(edge);
             }
         }
@@ -88,7 +90,7 @@ public class TerrainGraphView : GraphView
                 {
                     var outputNode = edge.output.node as GraphNode;
                     var inputNode = edge.input.node as GraphNode;
-                    _graph.edges.RemoveAll(x => x.outputNodeGuid == outputNode.Data.guid && x.inputNodeGuid == inputNode.Data.guid);
+                    _graph.edges.RemoveAll(x => x.outputNodeGuid == outputNode.Data.guid && x.inputNodeGuid == inputNode.Data.guid && x.outputPortName == edge.output.portName && x.inputPortName == edge.input.portName);
                 }
             }
         }
@@ -100,7 +102,7 @@ public class TerrainGraphView : GraphView
             {
                 var outputNode = edge.output.node as GraphNode;
                 var inputNode = edge.input.node as GraphNode;
-                _graph.edges.Add(new EdgeData { outputNodeGuid = outputNode.Data.guid, inputNodeGuid = inputNode.Data.guid });
+                _graph.edges.Add(new EdgeData { outputNodeGuid = outputNode.Data.guid, outputPortName = edge.output.portName, inputNodeGuid = inputNode.Data.guid, inputPortName = edge.input.portName });
             }
         }
         

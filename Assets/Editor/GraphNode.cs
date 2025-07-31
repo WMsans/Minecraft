@@ -1,12 +1,13 @@
 using UnityEditor.Experimental.GraphView;
 using UnityEngine.UIElements;
 using System.Linq;
+using System.Collections.Generic;
 
 public class GraphNode : Node
 {
     public NodeData Data { get; }
-    public Port inputPort;
-    public Port outputPort;
+    public List<Port> inputPorts = new List<Port>();
+    public List<Port> outputPorts = new List<Port>();
     private readonly TerrainGraph _graph;
 
     public GraphNode(NodeData data, TerrainGraph graph) : base()
@@ -20,21 +21,34 @@ public class GraphNode : Node
         style.left = data.position.x;
         style.top = data.position.y;
 
-        inputPort = Port.Create<Edge>(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(float));
-        inputPort.portName = "In";
-        inputContainer.Add(inputPort);
-
-        outputPort = Port.Create<Edge>(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
-        outputPort.portName = "Out";
-        outputContainer.Add(outputPort);
-
+        CreatePorts();
         AddPropertyFields();
 
         RefreshExpandedState();
         RefreshPorts();
     }
 
-    // New method to update the node's title to indicate if it's the root
+    private void CreatePorts()
+    {
+        var inputPortNames = _graph.GetInputPortNames(Data.layerType);
+        foreach (var portName in inputPortNames)
+        {
+            var port = Port.Create<Edge>(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(float));
+            port.portName = portName;
+            inputContainer.Add(port);
+            inputPorts.Add(port);
+        }
+
+        var outputPortNames = _graph.GetOutputPortNames(Data.layerType);
+        foreach (var portName in outputPortNames)
+        {
+            var port = Port.Create<Edge>(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
+            port.portName = portName;
+            outputContainer.Add(port);
+            outputPorts.Add(port);
+        }
+    }
+
     public void SetAsRoot(bool isRoot)
     {
         var friendlyName = Data.layerType.Split(',')[0].Split('.').Last();
@@ -47,7 +61,6 @@ public class GraphNode : Node
 
     private void AddPropertyFields()
     {
-        // Add fields based on layer type
         var fields = _graph.GetPropertyNames(Data.layerType);
         for (var i = 0; i < fields.Length;i++)
         {

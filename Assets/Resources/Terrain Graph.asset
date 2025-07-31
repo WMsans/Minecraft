@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Terrain Graph
   m_EditorClassIdentifier: 
   nodes:
-  - guid: b08acab4-0772-42ff-b79b-1b5df0f71583
+  - guid: 3718cd46-29b1-4fa9-bece-31b814bf3995
     layerType: PerlinNoiseHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
-    position: {x: 210, y: 197.33333}
+    position: {x: 144, y: 122}
     properties:
     - 0.01
     - 50
@@ -34,10 +34,10 @@ MonoBehaviour:
     - 0
     - 0
     - 0
-  - guid: e205b2ca-9556-4b20-acd1-51ecc1da3ce9
+  - guid: 7eb86752-122b-4cc6-bd1d-83a94c963edf
     layerType: HeightmapToVoxelLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
-    position: {x: 438, y: 197.33334}
+    position: {x: 369.33334, y: 122}
     properties:
     - 0
     - 0
@@ -55,10 +55,10 @@ MonoBehaviour:
     - 0
     - 0
     - 0
-  - guid: 063c50ee-09a0-45b7-aa14-8cccbccbd933
+  - guid: 522b60ab-a786-42c8-9460-472361034193
     layerType: ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
-    position: {x: 640, y: 197.33333}
+    position: {x: 574.6667, y: 122}
     properties:
     - 0
     - 0
@@ -77,37 +77,22 @@ MonoBehaviour:
     - 0
     - 0
   edges:
-  - outputNodeGuid: b08acab4-0772-42ff-b79b-1b5df0f71583
-    inputNodeGuid: e205b2ca-9556-4b20-acd1-51ecc1da3ce9
-  - outputNodeGuid: e205b2ca-9556-4b20-acd1-51ecc1da3ce9
-    inputNodeGuid: 063c50ee-09a0-45b7-aa14-8cccbccbd933
+  - outputNodeGuid: 3718cd46-29b1-4fa9-bece-31b814bf3995
+    outputPortName: Out
+    inputNodeGuid: 7eb86752-122b-4cc6-bd1d-83a94c963edf
+    inputPortName: In
+  - outputNodeGuid: 7eb86752-122b-4cc6-bd1d-83a94c963edf
+    outputPortName: Out
+    inputNodeGuid: 522b60ab-a786-42c8-9460-472361034193
+    inputPortName: In
   rootNode:
-    guid: b08acab4-0772-42ff-b79b-1b5df0f71583
-    layerType: PerlinNoiseHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
-    position: {x: 210, y: 197.33333}
-    properties:
-    - 0.01
-    - 50
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
+    guid: 
+    layerType: 
+    position: {x: 0, y: 0}
+    properties: []
   layerTypeNames:
-  - PerlinNoiseTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - HeightmapToVoxelLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
     PublicKeyToken=null
-  - FlatTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-  - HeightmapToVoxelLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - PerlinNoiseHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
     PublicKeyToken=null

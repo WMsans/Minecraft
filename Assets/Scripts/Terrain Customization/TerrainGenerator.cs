@@ -26,60 +26,68 @@ public class TerrainGenerator
             return;
         }
 
-        var sortedHeightmapLayers = SortLayersFromGraph<IHeightmapLayer, HeightmapLayer>(graph);
+        var sortedHeightmapNodes = SortNodesByDependency<IHeightmapLayer>(graph);
+        var sortedHeightmapLayers = sortedHeightmapNodes.Select(n => _graph.CreateLayer<HeightmapLayer>(n.layerType, n.properties)).ToList();
         _heightmapLayersArray = new NativeArray<HeightmapLayer>(sortedHeightmapLayers.ToArray(), Allocator.Persistent);
-        
-        var sortedVoxelLayers = SortLayersFromGraph<ITerrainLayer, TerrainLayer>(graph);
+
+        var sortedVoxelNodes = SortNodesByDependency<ITerrainLayer>(graph);
+        var sortedVoxelLayers = sortedVoxelNodes.Select(n => _graph.CreateLayer<TerrainLayer>(n.layerType, n.properties)).ToList();
         _voxelLayersArray = new NativeArray<TerrainLayer>(sortedVoxelLayers.ToArray(), Allocator.Persistent);
     }
 
-    private List<TLayer> SortLayersFromGraph<TInterface, TLayer>(TerrainGraph graph) where TLayer : struct
+    private List<NodeData> SortNodesByDependency<TInterface>(TerrainGraph graph)
     {
-        var layers = new List<TLayer>();
-        if (graph.rootNode == null && graph.nodes.Any())
-        {
-            graph.rootNode = graph.nodes[0];
-            Debug.LogWarning("TerrainGraph has no root node. Falling back to the first node in the list.");
-        }
-        
-        if (graph.rootNode == null) return layers;
-
         var sortedNodes = new List<NodeData>();
         var nodesToProcess = new Queue<NodeData>();
+        var nodeGuids = new HashSet<string>(graph.nodes.Where(n => typeof(TInterface).IsAssignableFrom(Type.GetType(n.layerType))).Select(n => n.guid));
+        var inDegree = new Dictionary<string, int>();
+
+        foreach (var guid in nodeGuids)
+        {
+            inDegree[guid] = 0;
+        }
+
+        foreach (var edge in graph.edges.Where(e => nodeGuids.Contains(e.inputNodeGuid) && nodeGuids.Contains(e.outputNodeGuid)))
+        {
+            inDegree[edge.inputNodeGuid]++;
+        }
+
+        foreach (var guid in nodeGuids)
+        {
+            if (inDegree[guid] == 0)
+            {
+                nodesToProcess.Enqueue(graph.nodes.First(n => n.guid == guid));
+            }
+        }
         
-        nodesToProcess.Enqueue(graph.rootNode);
+        if (graph.rootNode != null && nodeGuids.Contains(graph.rootNode.guid))
+        {
+            nodesToProcess.Clear();
+            nodesToProcess.Enqueue(graph.rootNode);
+        }
 
         while (nodesToProcess.Count > 0)
         {
             var currentNode = nodesToProcess.Dequeue();
             if (sortedNodes.All(n => n.guid != currentNode.guid))
             {
-                Type layerType = Type.GetType(currentNode.layerType);
-                if (layerType != null && typeof(TInterface).IsAssignableFrom(layerType))
-                {
-                    sortedNodes.Add(currentNode);
-                }
+                sortedNodes.Add(currentNode);
 
-                var outgoingEdges = graph.edges.Where(e => e.outputNodeGuid == currentNode.guid);
+                var outgoingEdges = graph.edges.Where(e => e.outputNodeGuid == currentNode.guid && nodeGuids.Contains(e.inputNodeGuid));
                 foreach (var edge in outgoingEdges)
                 {
-                    var nextNode = graph.nodes.First(n => n.guid == edge.inputNodeGuid);
-                    if (nextNode != null && nodesToProcess.All(n => n.guid != nextNode.guid))
+                    inDegree[edge.inputNodeGuid]--;
+                    if (inDegree[edge.inputNodeGuid] == 0)
                     {
-                       nodesToProcess.Enqueue(nextNode);
+                        nodesToProcess.Enqueue(graph.nodes.First(n => n.guid == edge.inputNodeGuid));
                     }
                 }
             }
         }
-        
-        // Create layer instances from the sorted node data
-        foreach (var nodeData in sortedNodes)
-        {
-            layers.Add(_graph.CreateLayer<TLayer>(nodeData.layerType, nodeData.properties));
-        }
 
-        return layers;
+        return sortedNodes;
     }
+
 
     public void Dispose()
     {
@@ -118,7 +126,6 @@ public class TerrainGenerator
         };
         var voxelHandle = applyVoxelLayersJob.Schedule(heightmapHandle);
 
-        // Dispose the heightmap after the jobs are done with it.
         heightmap.heights.Dispose(voxelHandle);
 
         return voxelHandle;

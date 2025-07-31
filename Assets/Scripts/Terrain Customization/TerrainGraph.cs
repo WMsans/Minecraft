@@ -62,6 +62,34 @@ public unsafe class TerrainGraph : ScriptableObject
         return new[] { "" };
     }
 
+    public string[] GetInputPortNames(string layerTypeName)
+    {
+        var type = Type.GetType(layerTypeName);
+        if (type != null)
+        {
+            var portsMethod = type.GetMethod("InputPorts");
+            if (portsMethod != null)
+            {
+                return (string[])portsMethod.Invoke(null, null);
+            }
+        }
+        return new[] { "In" };
+    }
+
+    public string[] GetOutputPortNames(string layerTypeName)
+    {
+        var type = Type.GetType(layerTypeName);
+        if (type != null)
+        {
+            var portsMethod = type.GetMethod("OutputPorts");
+            if (portsMethod != null)
+            {
+                return (string[])portsMethod.Invoke(null, null);
+            }
+        }
+        return new[] { "Out" };
+    }
+
     public IEnumerable<string> GetLayerTypeNames()
     {
         return layerTypeNames;
@@ -87,5 +115,7 @@ public unsafe class TerrainGraph : ScriptableObject
 public class EdgeData
 {
     public string outputNodeGuid;
+    public string outputPortName;
     public string inputNodeGuid;
+    public string inputPortName;
 }
