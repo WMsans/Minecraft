@@ -8,17 +8,17 @@ using Unity.Mathematics;
 public unsafe struct ApplyLayersJob : IJob
 {
     [ReadOnly] public NativeArray<TerrainLayer> layers;
+    [ReadOnly] public NativeArray<float> heightmap;
     public int seed;
     public NativeArray<float> density;
-    public NativeArray<byte> voxelTypes; 
-    public NativeList<EntityData> entities; // Changed from ParallelWriter to NativeList
+    public NativeArray<byte> voxelTypes;
+    public NativeList<EntityData> entities;
     public int chunkSize;
     public float3 offset;
     public float scale;
 
     public void Execute()
     {
-        // Get the ParallelWriter and its pointer here
         var entitiesWriter = entities.AsParallelWriter();
         void* entitiesPtr = UnsafeUtility.AddressOf(ref entitiesWriter);
 
@@ -27,8 +27,7 @@ public unsafe struct ApplyLayersJob : IJob
             var layer = layers[i];
             if (layer.enabled)
             {
-                // Pass the pointer to all layers
-                layer.Apply(seed, density, voxelTypes, chunkSize, in offset, scale, entitiesPtr); 
+                layer.Apply(seed, density, voxelTypes, chunkSize, in offset, scale, entitiesPtr, heightmap);
             }
         }
     }

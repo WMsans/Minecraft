@@ -14,7 +14,7 @@ public unsafe class TerrainGraph : ScriptableObject
 
     public List<string> layerTypeNames = new List<string>();
 
-    public TerrainLayer CreateLayer(string layerTypeName, params float[] properties)
+    public T CreateLayer<T>(string layerTypeName, params float[] properties) where T: struct
     {
         var type = Type.GetType(layerTypeName);
         if (type != null)
@@ -22,7 +22,7 @@ public unsafe class TerrainGraph : ScriptableObject
             var createMethod = type.GetMethod("Create", new[] { typeof(float[]) });
             if (createMethod != null)
             {
-                return (TerrainLayer)createMethod.Invoke(null, new object[] { properties });
+                return (T)createMethod.Invoke(null, new object[] { properties });
             }
         }
         throw new Exception($"Unknown terrain layer type: {layerTypeName}");
@@ -71,8 +71,10 @@ public unsafe class TerrainGraph : ScriptableObject
     public void FindAndRegisterLayers()
     {
         layerTypeNames.Clear();
-        var layerTypes = UnityEditor.TypeCache.GetTypesDerivedFrom<ITerrainLayer>().Where(t => !t.IsAbstract && !t.IsGenericType).ToList();
-        foreach (var type in layerTypes)
+        var terrainLayerTypes = UnityEditor.TypeCache.GetTypesDerivedFrom<ITerrainLayer>().Where(t => !t.IsAbstract && !t.IsGenericType);
+        var heightmapLayerTypes = UnityEditor.TypeCache.GetTypesDerivedFrom<IHeightmapLayer>().Where(t => !t.IsAbstract && !t.IsGenericType);
+        
+        foreach (var type in terrainLayerTypes.Concat(heightmapLayerTypes))
         {
             layerTypeNames.Add(type.AssemblyQualifiedName);
         }

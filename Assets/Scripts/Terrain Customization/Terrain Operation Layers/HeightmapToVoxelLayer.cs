@@ -1,51 +1,50 @@
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
 
 [BurstCompile]
-public unsafe struct FlatTerrainLayer : ITerrainLayer
+public unsafe struct HeightmapToVoxelLayer : ITerrainLayer
 {
     [BurstCompile]
     public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength)
     {
         if (!layer.enabled) return;
 
-        // Get property from the layer struct
-        float yLevel = layer.properties[0];
+        int heightmapWidth = (int)math.sqrt(heightmapLength);
 
         for (int i = 0; i < densityLength; i++)
         {
+            int x = i % (chunkSize + 1);
             int y = (i / (chunkSize + 1)) % (chunkSize + 1);
+            int z = i / ((chunkSize + 1) * (chunkSize + 1));
+
             float worldY = offset.y + (y / (float)chunkSize - 0.5f) * scale;
-            density[i] = worldY - yLevel;
+            
+            int heightmapX = (int)(((float)x / (chunkSize + 1)) * heightmapWidth);
+            int heightmapZ = (int)(((float)z / (chunkSize + 1)) * heightmapWidth);
+            int heightmapIndex = heightmapX + heightmapZ * heightmapWidth;
+            
+            float height = heightmap[heightmapIndex];
+            
+            density[i] = worldY - height;
         }
     }
 
     public static TerrainLayer Create(params float[] properties)
     {
-        float yLevel = 0f;
-
-        if (properties != null && properties.Length >= 1)
-        {
-            yLevel = properties[0];
-        }
-
-        return Create(yLevel);
+        return Create();
     }
 
-    public static TerrainLayer Create(float yLevel = 0f)
+    public static TerrainLayer Create()
     {
         var layer = new TerrainLayer
         {
             ApplyFunction = BurstCompiler.CompileFunctionPointer<TerrainLayer.ApplyDelegate>(Apply),
             enabled = true,
         };
-
-        // Set the property for this layer
-        layer.properties[0] = yLevel;
-
         return layer;
     }
 
-    public static string[] Fields() => new[] { "Y Level" };
+    public static string[] Fields() => Array.Empty<string>();
 }

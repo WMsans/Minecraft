@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -9,7 +8,8 @@ using UnityEngine;
 
 public class TerrainGenerator
 {
-    private NativeArray<TerrainLayer> _layersArray;
+    private NativeArray<HeightmapLayer> _heightmapLayersArray;
+    private NativeArray<TerrainLayer> _voxelLayersArray;
     private readonly TerrainGraph _graph;
 
     public TerrainGenerator(TerrainGraph graph)
@@ -26,13 +26,16 @@ public class TerrainGenerator
             return;
         }
 
-        var sortedLayers = SortLayersFromGraph(graph);
-        _layersArray = new NativeArray<TerrainLayer>(sortedLayers.ToArray(), Allocator.Persistent);
+        var sortedHeightmapLayers = SortLayersFromGraph<IHeightmapLayer, HeightmapLayer>(graph);
+        _heightmapLayersArray = new NativeArray<HeightmapLayer>(sortedHeightmapLayers.ToArray(), Allocator.Persistent);
+        
+        var sortedVoxelLayers = SortLayersFromGraph<ITerrainLayer, TerrainLayer>(graph);
+        _voxelLayersArray = new NativeArray<TerrainLayer>(sortedVoxelLayers.ToArray(), Allocator.Persistent);
     }
 
-    private List<TerrainLayer> SortLayersFromGraph(TerrainGraph graph)
+    private List<TLayer> SortLayersFromGraph<TInterface, TLayer>(TerrainGraph graph) where TLayer : struct
     {
-        var layers = new List<TerrainLayer>();
+        var layers = new List<TLayer>();
         if (graph.rootNode == null && graph.nodes.Any())
         {
             graph.rootNode = graph.nodes[0];
@@ -51,7 +54,12 @@ public class TerrainGenerator
             var currentNode = nodesToProcess.Dequeue();
             if (sortedNodes.All(n => n.guid != currentNode.guid))
             {
-                sortedNodes.Add(currentNode);
+                Type layerType = Type.GetType(currentNode.layerType);
+                if (layerType != null && typeof(TInterface).IsAssignableFrom(layerType))
+                {
+                    sortedNodes.Add(currentNode);
+                }
+
                 var outgoingEdges = graph.edges.Where(e => e.outputNodeGuid == currentNode.guid);
                 foreach (var edge in outgoingEdges)
                 {
@@ -67,36 +75,50 @@ public class TerrainGenerator
         // Create layer instances from the sorted node data
         foreach (var nodeData in sortedNodes)
         {
-            layers.Add(CreateLayerFromNodeData(nodeData));
+            layers.Add(_graph.CreateLayer<TLayer>(nodeData.layerType, nodeData.properties));
         }
 
         return layers;
     }
-    
-    private TerrainLayer CreateLayerFromNodeData(NodeData data)
-    {
-        return _graph.CreateLayer(data.layerType, data.properties);
-    }
 
     public void Dispose()
     {
-        if (_layersArray.IsCreated)
-            _layersArray.Dispose();
+        if (_heightmapLayersArray.IsCreated)
+            _heightmapLayersArray.Dispose();
+        if (_voxelLayersArray.IsCreated)
+            _voxelLayersArray.Dispose();
     }
 
     public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, NativeList<EntityData> entities, int chunkSize, float3 offset, float scale, JobHandle dependency)
     {
-        var job = new ApplyLayersJob
+        var heightmapSize = new int2(chunkSize + 1, chunkSize + 1);
+        var heightmap = new Heightmap(heightmapSize, Allocator.TempJob);
+
+        var generateHeightmapJob = new GenerateHeightmapJob
         {
-            seed = SeedController.Seed, 
-            layers = _layersArray,
-            density = density,
-            voxelTypes = voxelTypes,
-            entities = entities, 
-            chunkSize = chunkSize,
+            seed = SeedController.Seed,
+            layers = _heightmapLayersArray,
+            heightmap = heightmap,
             offset = offset,
             scale = scale
         };
-        return job.Schedule(dependency);
+        var heightmapHandle = generateHeightmapJob.Schedule(dependency);
+
+        var applyVoxelLayersJob = new ApplyLayersJob
+        {
+            seed = SeedController.Seed,
+            layers = _voxelLayersArray,
+            density = density,
+            voxelTypes = voxelTypes,
+            entities = entities,
+            chunkSize = chunkSize,
+            offset = offset,
+            scale = scale,
+            heightmap = heightmap.heights
+        };
+        var voxelHandle = applyVoxelLayersJob.Schedule(heightmapHandle);
+
+        // Corrected line:
+        return voxelHandle;
     }
 }

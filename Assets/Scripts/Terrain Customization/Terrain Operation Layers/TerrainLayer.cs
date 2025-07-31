@@ -7,8 +7,8 @@ using Unity.Mathematics;
 [BurstCompile]
 public unsafe struct TerrainLayer
 {
-    // The delegate now accepts a void pointer for entity data.
-    public delegate void ApplyDelegate(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities);
+    // The delegate now accepts a pointer and length for the heightmap.
+    public delegate void ApplyDelegate(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength);
 
     public FunctionPointer<ApplyDelegate> ApplyFunction;
 
@@ -17,9 +17,9 @@ public unsafe struct TerrainLayer
 
     public fixed float properties[16];
 
-    // The Apply method is updated to pass the pointer.
-    public void Apply(int seed, NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, in float3 offset, float scale, void* entities)
+    // The Apply method is updated to pass the pointer and length.
+    public void Apply(int seed, NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, in float3 offset, float scale, void* entities, NativeArray<float> heightmap)
     {
-        ApplyFunction.Invoke(ref this, seed, (float*)density.GetUnsafePtr(), (byte*)voxelTypes.GetUnsafePtr(), density.Length, chunkSize, in offset, scale, entities);
+        ApplyFunction.Invoke(ref this, seed, (float*)density.GetUnsafePtr(), (byte*)voxelTypes.GetUnsafePtr(), density.Length, chunkSize, in offset, scale, entities, (float*)heightmap.GetUnsafeReadOnlyPtr(), heightmap.Length);
     }
 }
