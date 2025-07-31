@@ -186,64 +186,67 @@ public class OctreeTerrainManager : MonoBehaviour
 
         foreach (var index in completedJobIndices)
         {
-            var (jobHandle, chunk, meshData) = generationJobs[index];
-            generationJobs.Remove(index);
-
-            jobHandle.Complete();
-
-            if (activeChunks.ContainsKey(index) && activeChunks[index] == chunk)
+            if (generationJobs.TryGetValue(index, out var jobData))
             {
-                chunk.ApplyGeneratedMesh(meshData);
+                var (jobHandle, chunk, meshData) = jobData;
+                generationJobs.Remove(index);
 
-                var chunkData = chunkDataManager.GetChunkData(index);
-                chunkData.vertices.Clear();
-                chunkData.vertices.AddRange(meshData.vertices.AsArray());
-                chunkData.triangles.Clear();
-                chunkData.triangles.AddRange(meshData.triangles.AsArray());
-            }
-            else
-            {
-                // If the chunk is no longer active, just return the pooled chunk
-                chunkPool.Return(chunk);
-            }
+                jobHandle.Complete();
 
-            // Dispose the meshData regardless of the chunk's status
-            if (meshData.IsCreated)
-            {
-                meshData.Dispose();
-            }
-
-            if (subdivisionParentMap.Remove(index, out int parentNodeIndex))
-            {
-                HandleChildCompletion(parentNodeIndex);
-            }
-
-            if (pendingMergeCleanup.TryGetValue(index, out int childrenIndexToDestroy))
-            {
-                var stack = new Stack<int>();
-                if (childrenIndexToDestroy != -1)
+                if (activeChunks.ContainsKey(index) && activeChunks[index] == chunk)
                 {
-                    stack.Push(childrenIndexToDestroy);
+                    chunk.ApplyGeneratedMesh(meshData);
+
+                    var chunkData = chunkDataManager.GetChunkData(index);
+                    chunkData.vertices.Clear();
+                    chunkData.vertices.AddRange(meshData.vertices.AsArray());
+                    chunkData.triangles.Clear();
+                    chunkData.triangles.AddRange(meshData.triangles.AsArray());
+                }
+                else
+                {
+                    // If the chunk is no longer active, just return the pooled chunk
+                    chunkPool.Return(chunk);
                 }
 
-                while (stack.Count > 0)
+                // Dispose the meshData regardless of the chunk's status
+                if (meshData.IsCreated)
                 {
-                    int currentIndex = stack.Pop();
-                    for (int i = 0; i < 8; i++)
+                    meshData.Dispose();
+                }
+
+                if (subdivisionParentMap.Remove(index, out int parentNodeIndex))
+                {
+                    HandleChildCompletion(parentNodeIndex);
+                }
+
+                if (pendingMergeCleanup.TryGetValue(index, out int childrenIndexToDestroy))
+                {
+                    var stack = new Stack<int>();
+                    if (childrenIndexToDestroy != -1)
                     {
-                        var childNode = nodes[currentIndex + i];
-                        if (!childNode.isLeaf)
-                        {
-                            stack.Push(childNode.childrenIndex);
-                        }
-                        DestroyChunk(currentIndex + i);
+                        stack.Push(childrenIndexToDestroy);
                     }
-                }
-                var node = nodes[index];
-                node.childrenIndex = -1;
-                nodes[index] = node;
 
-                pendingMergeCleanup.Remove(index);
+                    while (stack.Count > 0)
+                    {
+                        int currentIndex = stack.Pop();
+                        for (int i = 0; i < 8; i++)
+                        {
+                            var childNode = nodes[currentIndex + i];
+                            if (!childNode.isLeaf)
+                            {
+                                stack.Push(childNode.childrenIndex);
+                            }
+                            DestroyChunk(currentIndex + i);
+                        }
+                    }
+                    var node = nodes[index];
+                    node.childrenIndex = -1;
+                    nodes[index] = node;
+
+                    pendingMergeCleanup.Remove(index);
+                }
             }
         }
     }
@@ -276,6 +279,9 @@ public class OctreeTerrainManager : MonoBehaviour
             subdivisionParentMap[childNodeIndex] = nodeIndex;
 
             nodes.Add(new OctreeNode(new Bounds(node.bounds.center + centerOffset, new Vector3(childSize, childSize, childSize)), node.depth + 1));
+        
+            // Immediately start generating the new child chunk.
+            GenerateChunk(childNodeIndex);
         }
     }
 
@@ -284,9 +290,7 @@ public class OctreeTerrainManager : MonoBehaviour
         var node = nodes[nodeIndex];
         if (node.isLeaf || node.childrenIndex < 0) return;
 
-        // The children are NOT destroyed here. They remain visible.
-        // First, we generate the new parent chunk.
-        GenerateChunk(nodeIndex);
+        RegenerateChunk(nodeIndex);
 
         // Defer the destruction of the children until the parent is ready.
         // We store the parent's index and its children's start index for cleanup.
