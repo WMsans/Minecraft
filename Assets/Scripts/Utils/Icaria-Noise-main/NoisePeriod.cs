@@ -1,8 +1,11 @@
+using Unity.Burst;
+
 namespace Icaria.Engine.Procedural
 {
     /// <summary>
     /// A cache of expensive calculations needed for periodic noise functions. 
     /// </summary>
+    [BurstCompile]
     public readonly struct NoisePeriod
     {
         internal readonly int xf, yf, zf;

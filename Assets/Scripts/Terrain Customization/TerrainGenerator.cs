@@ -118,7 +118,9 @@ public class TerrainGenerator
         };
         var voxelHandle = applyVoxelLayersJob.Schedule(heightmapHandle);
 
-        // Corrected line:
+        // Dispose the heightmap after the jobs are done with it.
+        heightmap.heights.Dispose(voxelHandle);
+
         return voxelHandle;
     }
 }

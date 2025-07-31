@@ -1,7 +1,9 @@
 using System.Runtime.CompilerServices;
+using Unity.Burst;
+
 namespace Icaria.Engine.Procedural
 {
-
+    [BurstCompile]
     public static partial class IcariaNoise
     {
         /// <summary> -1 to 1 gradient noise function. Analagous to Perlin noise. </summary>
