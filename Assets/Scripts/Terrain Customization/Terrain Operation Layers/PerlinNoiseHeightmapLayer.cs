@@ -1,3 +1,4 @@
+using Icaria.Engine.Procedural;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -21,7 +22,7 @@ public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
                 float worldX = offset.x + (x / (float)(heightmap.size.x - 1) - 0.5f) * scale;
                 float worldZ = offset.z + (z / (float)(heightmap.size.y - 1) - 0.5f) * scale;
                 
-                float noiseValue = BurstNoiseGenerator.Perlin(seed, worldX * noiseScale, worldZ * noiseScale) * noiseStrength;
+                float noiseValue = IcariaNoise.GradientNoise(worldX * noiseScale, worldZ * noiseScale, seed) * noiseStrength;
                 
                 int index = x + z * heightmap.size.x;
                 heightmap.heights[index] += noiseValue;
