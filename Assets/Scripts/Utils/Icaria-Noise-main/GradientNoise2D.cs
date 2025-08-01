@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Unity.Burst;
+using Unity.Mathematics;
 
 namespace Icaria.Engine.Procedural
 {
@@ -40,6 +41,35 @@ namespace Icaria.Engine.Procedural
             int ulHash = (p1 + Const.YPrime1) * (p2 + Const.YPrime2);
             int urHash = (p1 + Const.XPlusYPrime1) * (p2 + Const.XPlusYPrime2);
             return InterpolateGradients2D(llHash, lrHash, ulHash, urHash, fx, fy);
+        }
+        
+        /// <summary>
+        /// -1 to 1 gradient noise, returning the noise value and its analytical derivatives.
+        /// The returned float3 contains:
+        /// x = The noise value.
+        /// y = The partial derivative with respect to x (∂N/∂x).
+        /// z = The partial derivative with respect to y (∂N/∂y).
+        /// </summary>
+        public static float3 GradientNoiseWithDerivatives(float x, float y, int seed = 0)
+        {
+            // Break up sample coords into integer and fractional parts
+            int ix = x > 0 ? (int)x : (int)x - 1;
+            int iy = y > 0 ? (int)y : (int)y - 1;
+            float fx = x - ix;
+            float fy = y - iy;
+
+            // Hashing logic (identical to the original GradientNoise)
+            ix += Const.Offset;
+            iy += Const.Offset;
+            ix += Const.SeedPrime * seed;
+            int p1 = ix * Const.XPrime1 + iy * Const.YPrime1;
+            int p2 = ix * Const.XPrime2 + iy * Const.YPrime2;
+            int llHash = p1 * p2;
+            int lrHash = (p1 + Const.XPrime1) * (p2 + Const.XPrime2);
+            int ulHash = (p1 + Const.YPrime1) * (p2 + Const.YPrime2);
+            int urHash = (p1 + Const.XPlusYPrime1) * (p2 + Const.XPlusYPrime2);
+
+            return InterpolateGradients2DWithDerivatives(llHash, lrHash, ulHash, urHash, fx, fy);
         }
 
         /// <summary>Two seperatly seeded fields of -1 to 1 gradient noise. Analagous to Perlin noise.</summary>
@@ -178,6 +208,66 @@ namespace Icaria.Engine.Procedural
             float lowerBlend = llGrad + (lrGrad - llGrad) * sx;
             float upperBlend = ulGrad + (urGrad - ulGrad) * sx;
             return lowerBlend + (upperBlend - lowerBlend) * sy;
+        }
+        
+        /// <summary>
+        /// Evaluates gradients, interpolates them for the noise value, and calculates the analytical derivatives.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe float3 InterpolateGradients2DWithDerivatives(int llHash, int lrHash, int ulHash, int urHash, float fx, float fy)
+        {
+            // Generate 2D gradient vectors from hashes
+            int xHash, yHash;
+
+            xHash = (llHash & Const.GradAndMask) | Const.GradOrMask;
+            yHash = xHash << Const.GradShift1;
+            float2 G_ll = new float2(*(float*)&xHash, *(float*)&yHash);
+
+            xHash = (lrHash & Const.GradAndMask) | Const.GradOrMask;
+            yHash = xHash << Const.GradShift1;
+            float2 G_lr = new float2(*(float*)&xHash, *(float*)&yHash);
+
+            xHash = (ulHash & Const.GradAndMask) | Const.GradOrMask;
+            yHash = xHash << Const.GradShift1;
+            float2 G_ul = new float2(*(float*)&xHash, *(float*)&yHash);
+
+            xHash = (urHash & Const.GradAndMask) | Const.GradOrMask;
+            yHash = xHash << Const.GradShift1;
+            float2 G_ur = new float2(*(float*)&xHash, *(float*)&yHash);
+
+            // Calculate dot products (gradient contributions)
+            float llGrad = math.dot(G_ll, new float2(fx, fy));
+            float lrGrad = math.dot(G_lr, new float2(fx - 1, fy));
+            float ulGrad = math.dot(G_ul, new float2(fx, fy - 1));
+            float urGrad = math.dot(G_ur, new float2(fx - 1, fy - 1));
+
+            // Smoothstep blending values
+            float sx = fx * fx * (3 - 2 * fx);
+            float sy = fy * fy * (3 - 2 * fy);
+
+            // --- Calculate Noise Value (Bilinear Interpolation) ---
+            float lowerBlend = Lerp(llGrad, lrGrad, sx);
+            float upperBlend = Lerp(ulGrad, urGrad, sx);
+            float noise = Lerp(lowerBlend, upperBlend, sy);
+
+            // --- Calculate Analytical Derivatives ---
+            // Derivative of the smoothstep function: s'(t) = 6t - 6t^2
+            float dsx_dfx = 6 * fx * (1 - fx);
+            float dsy_dfy = 6 * fy * (1 - fy);
+
+            // The derivative of the noise function N has two components:
+            // 1. The change from the interpolation weights.
+            // 2. The change from the gradient dot products themselves.
+
+            // Partial derivative with respect to x (∂N/∂x)
+            float dNoise_dx = dsx_dfx * Lerp(lrGrad - llGrad, urGrad - ulGrad, sy)    // Component 1
+                            + Lerp(Lerp(G_ll.x, G_lr.x, sx), Lerp(G_ul.x, G_ur.x, sx), sy); // Component 2
+
+            // Partial derivative with respect to y (∂N/∂y)
+            float dNoise_dy = dsy_dfy * (upperBlend - lowerBlend) // Component 1 (Lerp derivative)
+                            + Lerp(Lerp(G_ll.y, G_ul.y, sy), Lerp(G_lr.y, G_ur.y, sy), sx); // Component 2
+
+            return new float3(noise, dNoise_dx, dNoise_dy);
         }
 
 
