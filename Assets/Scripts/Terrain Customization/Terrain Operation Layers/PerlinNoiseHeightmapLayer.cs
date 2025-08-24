@@ -8,7 +8,7 @@ using Unity.Mathematics;
 public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
 {
     [BurstCompile]
-    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale, float* inputHeightmap, int inputHeightmapLength)
+    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
 

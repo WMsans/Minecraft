@@ -7,7 +7,7 @@ using Unity.Mathematics;
 [BurstCompile]
 public unsafe struct HeightmapLayer
 {
-    public delegate void ApplyDelegate(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale, float* inputHeightmap, int inputHeightmapLength);
+    public delegate void ApplyDelegate(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale);
 
     public FunctionPointer<ApplyDelegate> ApplyFunction;
 
@@ -16,8 +16,8 @@ public unsafe struct HeightmapLayer
 
     public fixed float properties[16];
 
-    public void Apply(int seed, ref Heightmap heightmap, in float3 offset, float scale, NativeArray<float> inputHeightmap)
+    public void Apply(int seed, ref Heightmap heightmap, in float3 offset, float scale)
     {
-        ApplyFunction.Invoke(ref this, seed, ref heightmap, in offset, scale, (float*)inputHeightmap.GetUnsafeReadOnlyPtr(), inputHeightmap.Length);
+        ApplyFunction.Invoke(ref this, seed, ref heightmap, in offset, scale);
     }
 }

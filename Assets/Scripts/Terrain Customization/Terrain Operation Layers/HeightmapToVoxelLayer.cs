@@ -7,7 +7,7 @@ using Unity.Mathematics;
 public unsafe struct HeightmapToVoxelLayer : ITerrainLayer
 {
     [BurstCompile]
-    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength, float* inputHeightmap, int inputHeightmapLength)
+    public static void Apply(ref TerrainLayer layer, int seed, float* density, byte* voxelTypes, int densityLength, int chunkSize, in float3 offset, float scale, void* entities, float* heightmap, int heightmapLength)
     {
         if (!layer.enabled) return;
 
