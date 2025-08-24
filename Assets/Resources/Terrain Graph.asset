@@ -16,7 +16,7 @@ MonoBehaviour:
   - guid: 3718cd46-29b1-4fa9-bece-31b814bf3995
     layerType: PerlinNoiseHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
-    position: {x: 144, y: 122}
+    position: {x: 146, y: 122}
     properties:
     - 0.01
     - 50
@@ -58,10 +58,31 @@ MonoBehaviour:
   - guid: 522b60ab-a786-42c8-9460-472361034193
     layerType: ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
-    position: {x: 574.6667, y: 122}
+    position: {x: 741.3333, y: 122}
     properties:
     - 0
     - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  - guid: 4677a3f7-6837-4362-bf64-d6f3cbbbfcb6
+    layerType: CaveGenerationLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    position: {x: 552.6667, y: 112}
+    properties:
+    - 0.01
+    - 0.5
     - 0
     - 0
     - 0
@@ -83,6 +104,10 @@ MonoBehaviour:
     inputPortName: In
   - outputNodeGuid: 7eb86752-122b-4cc6-bd1d-83a94c963edf
     outputPortName: Out
+    inputNodeGuid: 4677a3f7-6837-4362-bf64-d6f3cbbbfcb6
+    inputPortName: In
+  - outputNodeGuid: 4677a3f7-6837-4362-bf64-d6f3cbbbfcb6
+    outputPortName: Out
     inputNodeGuid: 522b60ab-a786-42c8-9460-472361034193
     inputPortName: In
   rootNode:
@@ -91,9 +116,10 @@ MonoBehaviour:
     position: {x: 0, y: 0}
     properties: []
   layerTypeNames:
+  - CaveGenerationLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - HeightmapToVoxelLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ApplyDefaultTextureTerrainLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
     PublicKeyToken=null
-  - HeightmapToVoxelLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - ErosionHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - PerlinNoiseHeightmapLayer, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
     PublicKeyToken=null
