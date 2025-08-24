@@ -14,18 +14,13 @@ public struct GenerateHeightmapJob : IJob
 
     public void Execute()
     {
-        // Placeholder for input heightmap
-        var inputHeightmap = new NativeArray<float>(heightmap.heights.Length, Allocator.Temp);
-
         for (int i = 0; i < layers.Length; i++)
         {
             var layer = layers[i];
             if (layer.enabled)
             {
-                layer.Apply(seed, ref heightmap, in offset, scale, inputHeightmap);
+                layer.Apply(seed, ref heightmap, in offset, scale);
             }
         }
-        
-        inputHeightmap.Dispose();
     }
 }

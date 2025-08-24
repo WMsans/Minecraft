@@ -22,18 +22,13 @@ public unsafe struct ApplyLayersJob : IJob
         var entitiesWriter = entities.AsParallelWriter();
         void* entitiesPtr = UnsafeUtility.AddressOf(ref entitiesWriter);
 
-        // Placeholder for input heightmap
-        var inputHeightmap = new NativeArray<float>(heightmap.Length, Allocator.Temp);
-
         for (int i = 0; i < layers.Length; i++)
         {
             var layer = layers[i];
             if (layer.enabled)
             {
-                layer.Apply(seed, density, voxelTypes, chunkSize, in offset, scale, entitiesPtr, heightmap, inputHeightmap);
+                layer.Apply(seed, density, voxelTypes, chunkSize, in offset, scale, entitiesPtr, heightmap);
             }
         }
-        
-        inputHeightmap.Dispose();
     }
 }
