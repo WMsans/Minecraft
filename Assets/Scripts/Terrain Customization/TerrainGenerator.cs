@@ -97,7 +97,7 @@ public class TerrainGenerator
             _voxelLayersArray.Dispose();
     }
 
-    public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, NativeList<EntityData> entities, int chunkSize, float3 offset, float scale, JobHandle dependency)
+    public JobHandle ScheduleApplyLayers(NativeArray<float> density, NativeArray<byte> voxelTypes, int chunkSize, float3 offset, float scale, JobHandle dependency)
     {
         var heightmapSize = new int2(chunkSize + 1, chunkSize + 1);
         var heightmap = new Heightmap(heightmapSize, Allocator.TempJob);
@@ -118,7 +118,6 @@ public class TerrainGenerator
             layers = _voxelLayersArray,
             density = density,
             voxelTypes = voxelTypes,
-            entities = entities,
             chunkSize = chunkSize,
             offset = offset,
             scale = scale,

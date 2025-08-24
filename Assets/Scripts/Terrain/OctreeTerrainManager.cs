@@ -5,8 +5,6 @@ using Unity.Mathematics;
 using Unity.Jobs;
 using System.Threading.Tasks;
 using Unity.Burst;
-using Unity.Entities;
-using Unity.Transforms;
 
 public class OctreeTerrainManager : MonoBehaviour
 {
@@ -20,7 +18,6 @@ public class OctreeTerrainManager : MonoBehaviour
     public TerrainGraph terrainGraph;
     [Header("Chunk Settings")]
     public Chunk chunkPrefab;
-    public int entityProcessingDepth = 2;
     public string worldName = "Za Warudo";
 
     private NativeList<OctreeNode> nodes;
@@ -55,8 +52,6 @@ public class OctreeTerrainManager : MonoBehaviour
     // Key: child node index, Value: parent node index
     private Dictionary<int, int> subdivisionParentMap = new Dictionary<int, int>();
     private Dictionary<int, int> subdivisionCompletionCounter = new Dictionary<int, int>();
-    
-    private EntityManager entityManager;
 
     private void Awake()
     {
@@ -71,7 +66,6 @@ public class OctreeTerrainManager : MonoBehaviour
         }
 
         terrainGenerator = new TerrainGenerator(terrainGraph);
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         chunkDataManager = new ChunkDataManager(worldName);
 
         chunkPool = new Pool<Chunk>(() =>
@@ -315,7 +309,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
             var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, chunkData.entities, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
             applyLayersHandle.Complete(); 
 
@@ -337,7 +331,6 @@ public class OctreeTerrainManager : MonoBehaviour
 
             var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
             generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
-            SpawnEntitiesForChunk(nodeIndex, chunkData);
         }
     }
 
@@ -351,7 +344,6 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void DestroyChunk(int nodeIndex)
     {
-        DestroyEntitiesForChunk(nodeIndex);
         if (generationJobs.TryGetValue(nodeIndex, out var job))
         {
             job.jobHandle.Complete();
@@ -374,70 +366,9 @@ public class OctreeTerrainManager : MonoBehaviour
         }
     }
     
-    private void SpawnEntitiesForChunk(int nodeIndex, ChunkData chunkData)
-    {
-        var entitiesToSpawn = LoadEntityDataForChunk(nodeIndex, chunkData);
 
-        foreach (var data in entitiesToSpawn)
-        {
-            Entity newEntity = entityManager.CreateEntity();
-            entityManager.AddComponentData(newEntity, new EntityType { Value = data.entityType });
-            entityManager.AddComponentData(newEntity, new LocalTransform { Position = data.position, Scale = 1f, Rotation = quaternion.identity });
-            entityManager.AddComponentData(newEntity, new Velocity { Value = data.velocity });
-            entityManager.AddComponentData(newEntity, new Health { Value = data.health, MaxValue = 100 });
-            entityManager.AddSharedComponent(newEntity, new ChunkOwner { NodeIndex = nodeIndex });
-        }
-    }
 
-    public List<int> GetEntityProcessingChunks()
-    {
-        var processingChunks = new List<int>();
-        var stack = new Stack<int>();
 
-        if (nodes.IsCreated && nodes.Length > 0)
-        {
-            stack.Push(0); 
-        }
-
-        while (stack.Count > 0)
-        {
-            int nodeIndex = stack.Pop();
-            var node = nodes[nodeIndex];
-
-            
-            if (node.depth >= entityProcessingDepth)
-            {
-                processingChunks.Add(nodeIndex);
-                continue; 
-            }
-            
-            if (!node.isLeaf)
-            {
-                for (int i = 0; i < 8; i++)
-                {
-                    stack.Push(node.childrenIndex + i);
-                }
-            }
-            else 
-            {
-                processingChunks.Add(nodeIndex);
-            }
-        }
-
-        return processingChunks;
-    }
-
-    private void DestroyEntitiesForChunk(int nodeIndex)
-    {
-        EntityQuery query = entityManager.CreateEntityQuery(typeof(ChunkOwner));
-        query.SetSharedComponentFilter(new ChunkOwner { NodeIndex = nodeIndex });
-        entityManager.DestroyEntity(query);
-    }
-
-    private NativeList<EntityData> LoadEntityDataForChunk(int nodeIndex, ChunkData chunkData)
-    {
-        return chunkData.entities;
-    }
     
     /// <summary>
     /// Handles the completion of a child chunk from a subdivision.
@@ -530,7 +461,7 @@ public class OctreeTerrainManager : MonoBehaviour
 
         var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, chunkData.entities, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
         var applyModsJob = new ApplyModificationsJob
         {

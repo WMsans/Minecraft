@@ -11,7 +11,6 @@ public struct ChunkData : IDisposable
 {
     public NativeArray<float> densityMap;
     public NativeArray<byte> voxelTypes;
-    public NativeList<EntityData> entities;
     public NativeList<float3> vertices;
     public NativeList<int> triangles;
 
@@ -19,7 +18,6 @@ public struct ChunkData : IDisposable
     {
         densityMap = new NativeArray<float>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
         voxelTypes = new NativeArray<byte>((TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1) * (TerrainSettings.MIN_NODE_SIZE + 1), Allocator.Persistent);
-        entities = new NativeList<EntityData>(Allocator.Persistent);
         vertices = new NativeList<float3>(Allocator.Persistent);
         triangles = new NativeList<int>(Allocator.Persistent);
     }
@@ -28,7 +26,6 @@ public struct ChunkData : IDisposable
     {
         if (densityMap.IsCreated) densityMap.Dispose();
         if (voxelTypes.IsCreated) voxelTypes.Dispose();
-        if (entities.IsCreated) entities.Dispose();
         if (vertices.IsCreated) vertices.Dispose();
         if (triangles.IsCreated) triangles.Dispose();
     }
