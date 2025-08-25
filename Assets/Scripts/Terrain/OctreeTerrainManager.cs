@@ -297,22 +297,36 @@ public class OctreeTerrainManager : MonoBehaviour
 
     private void GenerateChunk(int nodeIndex)
     {
+        // Return if a job for this chunk is already running.
         if (generationJobs.ContainsKey(nodeIndex)) return;
 
+        // If the chunk is already active (e.g., it was just hidden), simply reactivate it.
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
             chunk.gameObject.SetActive(true);
         }
+        // Otherwise, we need to generate it from scratch.
         else
         {
             var node = nodes[nodeIndex];
-
             var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
+            // --- THE FIX IS HERE ---
 
-            applyLayersHandle.Complete(); 
+            // Step 1: Schedule the base terrain generation. This runs in the background.
+            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(
+                chunkData.densityMap, 
+                chunkData.voxelTypes, 
+                TerrainSettings.MIN_NODE_SIZE, 
+                new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), 
+                node.bounds.size.x, 
+                default
+            );
 
+            // This is the line that caused the freeze. By removing it, the main thread is free.
+            // applyLayersHandle.Complete(); 
+
+            // Step 2: Schedule the modification job, making it wait for the base terrain job to finish.
             var applyModsJob = new ApplyModificationsJob
             {
                 modifications = this.terrainModifications,
@@ -321,16 +335,28 @@ public class OctreeTerrainManager : MonoBehaviour
                 voxelTypes = chunkData.voxelTypes,
                 chunkSize = TerrainSettings.MIN_NODE_SIZE
             };
+            // We chain the jobs by passing the first handle as a dependency to the second.
             var applyModsHandle = applyModsJob.Schedule(applyLayersHandle);
 
+            // Keep track of modification jobs for safety.
             applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, applyModsHandle);
 
+            // Get a new chunk from the pool and activate it.
             var newChunk = chunkPool.Get();
             newChunk.gameObject.SetActive(true);
             activeChunks[nodeIndex] = newChunk;
 
-            var jobHandle = newChunk.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyModsHandle, out var meshData);
-            generationJobs[nodeIndex] = (jobHandle, newChunk, meshData);
+            // Step 3: Schedule the final mesh generation, making it wait for the modification job.
+            var meshJobHandle = newChunk.ScheduleTerrainGeneration(
+                nodes[nodeIndex], 
+                chunkData.densityMap, 
+                chunkData.voxelTypes, 
+                applyModsHandle, // Pass the dependency handle from the previous step.
+                out var meshData
+            );
+            
+            // Store the final job handle so we can check when the chunk is ready.
+            generationJobs[nodeIndex] = (meshJobHandle, newChunk, meshData);
         }
     }
 
@@ -390,6 +416,7 @@ public class OctreeTerrainManager : MonoBehaviour
         }
     }
 
+
     public void ModifyTerrain(Vector3 worldPos, float strength, float radius, byte newVoxelType)
     {
         applyModificationsHandle.Complete();
@@ -402,9 +429,12 @@ public class OctreeTerrainManager : MonoBehaviour
             newVoxelType = newVoxelType
         };
 
-        // Apply the modification immediately to affected chunks
+        // BUG FIX: Add the modification to the list BEFORE regeneration.
+        terrainModifications.Add(modification);
+
         Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
-        List<int> modifiedNodeIndices = new List<int>();
+        // Use a HashSet to avoid queueing the same chunk multiple times
+        HashSet<int> modifiedNodeIndices = new HashSet<int>();
 
         var stack = new Stack<int>();
         if (nodes.Length > 0)
@@ -435,14 +465,13 @@ public class OctreeTerrainManager : MonoBehaviour
             }
         }
 
-        // Apply the modification directly to chunk data without regenerating from scratch
+        // Now, trigger a full regeneration for each affected chunk
         foreach (var index in modifiedNodeIndices)
         {
-            ApplyModificationToChunk(index, modification);
+            // BUG FIX: Instead of a special incremental update,
+            // always perform a full, consistent regeneration.
+            RegenerateChunk(index, true);
         }
-
-        // Store the modification for future chunk generation
-        terrainModifications.Add(modification);
     }
 
     private void ApplyModificationToChunk(int nodeIndex, TerrainModification modification)
@@ -485,54 +514,40 @@ public class OctreeTerrainManager : MonoBehaviour
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
 
-    private void RegenerateChunk(int nodeIndex, bool fullRegeneration = false)
+    private void RegenerateChunk(int nodeIndex, bool fullRegeneration = true) 
     {
         if (generationJobs.ContainsKey(nodeIndex))
         {
+            // Optional: You might want to cancel the existing job and start a new one.
+            // For now, just returning is safe.
             return;
         }
 
+        // If the chunk isn't active, we still need to generate it.
+        // Get a chunk from the pool or find the active one.
         if (!activeChunks.TryGetValue(nodeIndex, out Chunk chunkToUpdate))
         {
-            GenerateChunk(nodeIndex);
-            return;
+            chunkToUpdate = chunkPool.Get();
+            chunkToUpdate.gameObject.SetActive(true);
+            activeChunks[nodeIndex] = chunkToUpdate;
         }
-        
+    
         var node = nodes[nodeIndex];
         var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
-        JobHandle finalHandle = default;
+        // Full regeneration for consistency - regenerate from terrain layers first.
+        var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
 
-        if (fullRegeneration)
+        // Then apply ALL stored modifications from the beginning of time.
+        var applyModsJob = new ApplyModificationsJob
         {
-            // Full regeneration for merging - regenerate from terrain layers
-            var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
-
-            // Then apply ALL stored modifications
-            var applyModsJob = new ApplyModificationsJob
-            {
-                modifications = this.terrainModifications,
-                nodeBounds = node.bounds,
-                densityMap = chunkData.densityMap,
-                voxelTypes = chunkData.voxelTypes,
-                chunkSize = TerrainSettings.MIN_NODE_SIZE
-            };
-            var applyModsHandle = applyModsJob.Schedule(applyLayersHandle);
-            finalHandle = applyModsHandle;
-        }
-        else
-        {
-            // For regular regeneration, just apply all modifications to existing data
-            var applyModsJob = new ApplyModificationsJob
-            {
-                modifications = this.terrainModifications,
-                nodeBounds = node.bounds,
-                densityMap = chunkData.densityMap,
-                voxelTypes = chunkData.voxelTypes,
-                chunkSize = TerrainSettings.MIN_NODE_SIZE
-            };
-            finalHandle = applyModsJob.Schedule();
-        }
+            modifications = this.terrainModifications,
+            nodeBounds = node.bounds,
+            densityMap = chunkData.densityMap,
+            voxelTypes = chunkData.voxelTypes,
+            chunkSize = TerrainSettings.MIN_NODE_SIZE
+        };
+        var finalHandle = applyModsJob.Schedule(applyLayersHandle);
 
         applyModificationsHandle = JobHandle.CombineDependencies(applyModificationsHandle, finalHandle);
 
