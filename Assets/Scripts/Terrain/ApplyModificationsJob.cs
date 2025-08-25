@@ -17,50 +17,59 @@ public struct ApplyModificationsJob : IJob
 
     public void Execute()
     {
-        // Calculate the scale of the chunk's grid points relative to world space.
-        float scale = nodeBounds.size.x / chunkSize;
+        // Calculate the voxel size in world space
+        // This is the distance between adjacent points in the density grid
+        float voxelSize = nodeBounds.size.x / chunkSize;
 
         // Process each modification.
         for (int i = 0; i < modifications.Length; i++)
         {
             var mod = modifications[i];
             
-            // Create bounds for the modification to check for intersection with the current node.
+            // Quick bounds check for early rejection
             Bounds modBounds = new Bounds(mod.worldPos, new float3(mod.radius, mod.radius, mod.radius) * 2);
             if (!modBounds.Intersects(nodeBounds)) continue;
 
-            // Calculate the iteration bounds in the density grid's coordinates.
-            float3 modMinGrid = (new float3(mod.worldPos) - new float3(mod.radius) - new float3(nodeBounds.min)) / scale;
-            float3 modMaxGrid = (new float3(mod.worldPos) + new float3(mod.radius) - new float3(nodeBounds.min)) / scale;
+            // Convert modification bounds from world space to grid indices
+            float3 worldMin = new float3(mod.worldPos) - new float3(mod.radius);
+            float3 worldMax = new float3(mod.worldPos) + new float3(mod.radius);
+            
+            // Calculate grid coordinates (0 to chunkSize)
+            float3 modMinGrid = (worldMin - new float3(nodeBounds.min)) / voxelSize;
+            float3 modMaxGrid = (worldMax - new float3(nodeBounds.min)) / voxelSize;
 
-            // Clamp the iteration bounds to the chunk's dimensions.
+            // Clamp to valid grid indices
             int3 min = (int3)math.max(0, math.floor(modMinGrid));
             int3 max = (int3)math.min(chunkSize, math.ceil(modMaxGrid));
 
-            // Iterate through the affected density grid cells.
+            // Iterate through affected grid points
             for (int z = min.z; z <= max.z; z++)
             {
                 for (int y = min.y; y <= max.y; y++)
                 {
                     for (int x = min.x; x <= max.x; x++)
                     {
-                        // Calculate the world position of the current density grid cell.
-                        float3 gridPointPos = new float3(nodeBounds.min) + new float3(x, y, z) * scale;
+                        // Convert grid position back to world position
+                        float3 gridPointWorld = new float3(nodeBounds.min) + new float3(x, y, z) * voxelSize;
                         
-                        // Check if the cell is within the modification's spherical radius.
-                        float distance = math.distance(gridPointPos, mod.worldPos);
+                        // Calculate distance from modification center
+                        float distance = math.distance(gridPointWorld, mod.worldPos);
                         if (distance > mod.radius) continue;
 
+                        // Calculate the grid index
                         int index = x + (chunkSize + 1) * (y + (chunkSize + 1) * z);
 
                         if (index >= 0 && index < densityMap.Length)
                         {
-                            // Apply the modification with a falloff based on distance.
-                            float falloff = 1 - (distance / mod.radius);
+                            // Apply modification with smooth falloff
+                            float falloff = 1f - (distance / mod.radius);
+                            // Use a smoother falloff curve for better results
+                            falloff = falloff * falloff * (3f - 2f * falloff); // Smoothstep
+                            
                             densityMap[index] += mod.strength * falloff;
                             
-                            // If digging, update the voxel type.
-                            if(mod.strength < 0)
+                            // Update voxel type for digging operations
+                            if (mod.strength < 0 && densityMap[index] > 0)
                             {
                                 voxelTypes[index] = mod.newVoxelType;
                             }
