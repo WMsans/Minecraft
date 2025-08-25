@@ -27,7 +27,7 @@ public unsafe struct HeightmapToVoxelLayer : ITerrainLayer
             
             float height = heightmap[heightmapIndex];
             
-            density[i] = worldY - height;
+            density[i] = (worldY - height) < 0 ? -1 : 0;
         }
     }
 

@@ -22,16 +22,16 @@ MonoBehaviour:
     replacementShaderName: GPUInstancerPro/NatureManufacture/URP/Foliage/Bark
     extensionCode: 
     isUseOriginal: 0
-    modifiedDate: 07/28/2025 19:39:48.795
+    modifiedDate: 08/25/2025 09:02:33.465
   - shaderName: NatureManufacture/URP/Foliage/Foliage
     replacementShaderName: GPUInstancerPro/NatureManufacture/URP/Foliage/Foliage
     extensionCode: 
     isUseOriginal: 0
-    modifiedDate: 07/28/2025 19:39:51.435
+    modifiedDate: 08/25/2025 09:02:34.135
   - shaderName: NatureManufacture/URP/Foliage/Cross
     replacementShaderName: GPUInstancerPro/NatureManufacture/URP/Foliage/Cross
     extensionCode: 
     isUseOriginal: 0
-    modifiedDate: 07/28/2025 19:39:53.216
+    modifiedDate: 08/25/2025 09:02:34.835
   stripObjectMotionVectorVariants: 0
   stripPerInstanceLightProbeVariants: 0

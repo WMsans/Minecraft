@@ -26,15 +26,6 @@
         "com.gurbu.gpui-pro": "0.11.2"
       }
     },
-    "com.singularitygroup.hotreload": {
-      "version": "file:com.singularitygroup.hotreload",
-      "depth": 0,
-      "source": "embedded",
-      "dependencies": {
-        "com.unity.ugui": "1.0.0",
-        "com.unity.modules.unitywebrequest": "1.0.0"
-      }
-    },
     "com.unity.ai.navigation": {
       "version": "2.0.8",
       "depth": 0,
@@ -230,8 +221,8 @@
       "depth": 1,
       "source": "registry",
       "dependencies": {
-        "com.unity.burst": "1.7.2",
-        "com.unity.collections": "2.4.2"
+        "com.unity.collections": "2.4.2",
+        "com.unity.burst": "1.7.2"
       },
       "url": "https://packages.unity.com"
     },
