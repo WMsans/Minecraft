@@ -42,9 +42,6 @@ public class OctreeTerrainManager : MonoBehaviour
         public byte newVoxelType;
     }
 
-    // The persistent list of all modifications is no longer needed.
-    private NativeList<TerrainModification> terrainModifications;
-
     private Dictionary<int, int> pendingMergeCleanup = new Dictionary<int, int>();
     private Dictionary<int, int> subdivisionParentMap = new Dictionary<int, int>();
     private Dictionary<int, int> subdivisionCompletionCounter = new Dictionary<int, int>();
@@ -85,7 +82,6 @@ public class OctreeTerrainManager : MonoBehaviour
         generationJobs = new Dictionary<int, (JobHandle, Chunk, Chunk.MeshData)>();
         nodes.Add(new OctreeNode(new Bounds(Vector3.zero, Vector3.one * nodeSize), 0));
 
-        terrainModifications = new NativeList<TerrainModification>(Allocator.Persistent);
     }
 
     private void InitializeMarchingCubesTables()
@@ -110,7 +106,6 @@ public class OctreeTerrainManager : MonoBehaviour
         if (cornerOffsets.IsCreated) cornerOffsets.Dispose();
         if (cornerIndexAFromEdge.IsCreated) cornerIndexAFromEdge.Dispose();
         if (cornerIndexBFromEdge.IsCreated) cornerIndexBFromEdge.Dispose();
-        if (terrainModifications.IsCreated) terrainModifications.Dispose();
 
         if (terrainGenerator != null)
         {
@@ -303,22 +298,22 @@ public class OctreeTerrainManager : MonoBehaviour
             job.meshData.Dispose();
             generationJobs.Remove(nodeIndex);
         }
-    
+
         if (activeChunks.TryGetValue(nodeIndex, out Chunk chunk))
         {
             chunk.ClearMesh();
             chunkPool.Return(chunk);
             activeChunks.Remove(nodeIndex);
         }
-        
+
         chunkDataManager.UnloadChunkData(nodeIndex);
-        
+
         if (subdivisionParentMap.Remove(nodeIndex, out int parentNodeIndex))
         {
             HandleChildCompletion(parentNodeIndex);
         }
     }
-    
+
     private void HandleChildCompletion(int parentNodeIndex)
     {
         int count = subdivisionCompletionCounter.GetValueOrDefault(parentNodeIndex, 0);
@@ -341,7 +336,6 @@ public class OctreeTerrainManager : MonoBehaviour
             radius = radius,
             newVoxelType = newVoxelType
         };
-        terrainModifications.Add(modification);
 
         Bounds modificationBounds = new Bounds(worldPos, new Vector3(radius, radius, radius) * 2);
         HashSet<int> modifiedNodeIndices = new HashSet<int>();
@@ -388,14 +382,14 @@ public class OctreeTerrainManager : MonoBehaviour
         {
             existingJobHandle = runningJob.jobHandle;
         }
-        
+
         if (!activeChunks.TryGetValue(nodeIndex, out Chunk chunkToUpdate))
         {
             chunkToUpdate = chunkPool.Get();
             chunkToUpdate.gameObject.SetActive(true);
             activeChunks[nodeIndex] = chunkToUpdate;
         }
-        
+
         var node = nodes[nodeIndex];
         var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
@@ -406,14 +400,14 @@ public class OctreeTerrainManager : MonoBehaviour
             densityMap = chunkData.densityMap,
             chunkSize = TerrainSettings.MIN_NODE_SIZE
         };
-        
+
         var sdfModHandle = sdfModJob.Schedule(existingJobHandle);
 
         var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, sdfModHandle, out var meshData);
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
 
-    private void RegenerateChunk(int nodeIndex) 
+    private void RegenerateChunk(int nodeIndex)
     {
         if (generationJobs.ContainsKey(nodeIndex))
         {
@@ -426,30 +420,16 @@ public class OctreeTerrainManager : MonoBehaviour
             chunkToUpdate.gameObject.SetActive(true);
             activeChunks[nodeIndex] = chunkToUpdate;
         }
-    
+
         var node = nodes[nodeIndex];
         var chunkData = chunkDataManager.GetChunkData(nodeIndex);
 
         var applyLayersHandle = terrainGenerator.ScheduleApplyLayers(chunkData.densityMap, chunkData.voxelTypes, TerrainSettings.MIN_NODE_SIZE, new float3(node.bounds.center.x, node.bounds.center.y, node.bounds.center.z), node.bounds.size.x, default);
-        
-        var allModificationsHandle = applyLayersHandle;
-        for (int i = 0; i < terrainModifications.Length; i++)
-        {
-            var sdfModJob = new SDFModificationJob
-            {
-                modification = terrainModifications[i],
-                nodeBounds = node.bounds,
-                densityMap = chunkData.densityMap,
-                chunkSize = TerrainSettings.MIN_NODE_SIZE
-            };
-            allModificationsHandle = sdfModJob.Schedule(allModificationsHandle);
-        }
 
-
-        var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, allModificationsHandle, out var meshData);
+        var jobHandle = chunkToUpdate.ScheduleTerrainGeneration(nodes[nodeIndex], chunkData.densityMap, chunkData.voxelTypes, applyLayersHandle, out var meshData);
         generationJobs[nodeIndex] = (jobHandle, chunkToUpdate, meshData);
     }
-    
+
     public bool Raycast(Ray ray, out BurstRaycast.RaycastHit hit)
     {
         var chunkDataDict = new Dictionary<int, ChunkData>();
