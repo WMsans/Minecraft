@@ -14,6 +14,7 @@ public unsafe struct CaveGenerationLayer : ITerrainLayer
 
         float noiseScale = layer.properties[0];
         float threshold = layer.properties[1];
+        float smoothing = layer.properties[2];
 
         for (int i = 0; i < densityLength; i++)
         {
@@ -27,9 +28,17 @@ public unsafe struct CaveGenerationLayer : ITerrainLayer
 
             float noiseValue = IcariaNoise.GradientNoise3D(worldX * noiseScale, worldY * noiseScale, worldZ * noiseScale, seed);
 
-            if (noiseValue > threshold)
+            if (smoothing > 0)
             {
-                // Carve out a cave by setting the density to a positive value
+                float distance = noiseValue - threshold;
+                // Create a smooth transition around the threshold
+                float newDensity = math.clamp(distance / smoothing, -1f, 1f);
+                // Combine with existing density, taking the max to carve out shape
+                density[i] = math.max(density[i], newDensity);
+            }
+            else if (noiseValue > threshold)
+            {
+                // Original blocky carving for comparison or when smoothing is zero
                 density[i] = 1.0f;
             }
         }
@@ -39,21 +48,29 @@ public unsafe struct CaveGenerationLayer : ITerrainLayer
     {
         float noiseScale = 0.05f;
         float threshold = 0.5f;
+        float smoothing = 0.1f;
 
-        if (properties != null && properties.Length >= 2)
+        if (properties is { Length: >= 3 })
+        {
+            noiseScale = properties[0];
+            threshold = properties[1];
+            smoothing = properties[2];
+        }
+        else if (properties is { Length: >= 2 })
         {
             noiseScale = properties[0];
             threshold = properties[1];
         }
-        else if (properties != null && properties.Length >= 1)
+        else if (properties is { Length: >= 1 })
         {
             noiseScale = properties[0];
         }
 
-        return Create(noiseScale, threshold);
+
+        return Create(noiseScale, threshold, smoothing);
     }
 
-    public static TerrainLayer Create(float noiseScale = 0.05f, float threshold = 0.5f)
+    public static TerrainLayer Create(float noiseScale = 0.05f, float threshold = 0.5f, float smoothing = 0.1f)
     {
         var layer = new TerrainLayer
         {
@@ -63,11 +80,12 @@ public unsafe struct CaveGenerationLayer : ITerrainLayer
 
         layer.properties[0] = noiseScale;
         layer.properties[1] = threshold;
+        layer.properties[2] = smoothing;
 
         return layer;
     }
 
-    public static string[] Fields() => new[] { "Noise Scale", "Threshold" };
+    public static string[] Fields() => new[] { "Noise Scale", "Threshold", "Smoothing" };
     public static string[] InputPorts() => new[] { "In" };
     public static string[] OutputPorts() => new[] { "Out" };
 }
