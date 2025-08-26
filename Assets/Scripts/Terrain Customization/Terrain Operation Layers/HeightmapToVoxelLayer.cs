@@ -12,6 +12,7 @@ public unsafe struct HeightmapToVoxelLayer : ITerrainLayer
         if (!layer.enabled) return;
 
         int heightmapWidth = (int)math.sqrt(heightmapLength);
+        if (heightmapWidth == 0) return;
 
         for (int i = 0; i < densityLength; i++)
         {
@@ -20,14 +21,38 @@ public unsafe struct HeightmapToVoxelLayer : ITerrainLayer
             int z = i / ((chunkSize + 1) * (chunkSize + 1));
 
             float worldY = offset.y + (y / (float)chunkSize - 0.5f) * scale;
-            
-            int heightmapX = (int)(((float)x / (chunkSize + 1)) * heightmapWidth);
-            int heightmapZ = (int)(((float)z / (chunkSize + 1)) * heightmapWidth);
-            int heightmapIndex = heightmapX + heightmapZ * heightmapWidth;
-            
-            float height = heightmap[heightmapIndex];
-            
-            density[i] = (worldY - height) < 0 ? -1 : 0;
+
+            // Use floating point coordinates for interpolation
+            float hx = ((float)x / chunkSize) * (heightmapWidth - 1);
+            float hz = ((float)z / chunkSize) * (heightmapWidth - 1);
+
+            int hx0 = (int)hx;
+            int hz0 = (int)hz;
+
+            // Clamp coordinates to prevent reading out of bounds
+            int hx1 = math.min(hx0 + 1, heightmapWidth - 1);
+            int hz1 = math.min(hz0 + 1, heightmapWidth - 1);
+
+            // Interpolation factors
+            float tx = hx - hx0;
+            float tz = hz - hz0;
+
+            // Sample four nearest heightmap values
+            float h00 = heightmap[hx0 + hz0 * heightmapWidth];
+            float h10 = heightmap[hx1 + hz0 * heightmapWidth];
+            float h01 = heightmap[hx0 + hz1 * heightmapWidth];
+            float h11 = heightmap[hx1 + hz1 * heightmapWidth];
+
+            // Bilinear interpolation for smooth height
+            float height = math.lerp(math.lerp(h00, h10, tx), math.lerp(h01, h11, tx), tz);
+
+            // This is the key change: we create a "transition band" 
+            // of 2 voxels around the surface for a smoother gradient.
+            float voxelSize = scale / chunkSize;
+            float transition_band = 2.0f * voxelSize;
+            float distance_from_surface = worldY - height;
+
+            density[i] = math.clamp(distance_from_surface / transition_band, -1.0f, 1.0f);
         }
     }
 
