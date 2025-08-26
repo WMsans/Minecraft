@@ -10,7 +10,7 @@ public unsafe struct ErosionHeightmapLayer : IHeightmapLayer
     private const float PI = 3.14159265359f;
 
     [BurstCompile]
-    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale, float* inputHeightmap, int inputHeightmapLength)
+    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
 

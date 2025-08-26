@@ -8,12 +8,13 @@ using Unity.Mathematics;
 public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
 {
     [BurstCompile]
-    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale, float* inputHeightmap, int inputHeightmapLength)
+    public static void Apply(ref HeightmapLayer layer, int seed, ref Heightmap heightmap, in float3 offset, float scale)
     {
         if (!layer.enabled) return;
 
         float noiseScale = layer.properties[0];
         float noiseStrength = layer.properties[1];
+        float baseHeight = layer.properties[2];
 
         for (int x = 0; x < heightmap.size.x; x++)
         {
@@ -26,7 +27,7 @@ public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
                 float noiseValue = IcariaNoise.GradientNoise(worldX * noiseScale, worldZ * noiseScale, seed) * noiseStrength;
                 
                 int index = x + z * heightmap.size.x;
-                heightmap.heights[index] += noiseValue;
+                heightmap.heights[index] += baseHeight + noiseValue;
             }
         }
     }
@@ -35,16 +36,23 @@ public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
     {
         float noiseScale = 0.05f;
         float noiseStrength = 10f;
-        if (properties != null && properties.Length >= 2)
+        float baseHeight = 0f;
+        if (properties != null && properties.Length >= 3)
+        {
+            noiseScale = properties[0];
+            noiseStrength = properties[1];
+            baseHeight = properties[2];
+        }
+        else if (properties != null && properties.Length >= 2)
         {
             noiseScale = properties[0];
             noiseStrength = properties[1];
         }
 
-        return Create(noiseScale, noiseStrength);
+        return Create(noiseScale, noiseStrength, baseHeight);
     }
 
-    public static HeightmapLayer Create(float noiseScale = 0.05f, float noiseStrength = 10f)
+    public static HeightmapLayer Create(float noiseScale = 0.05f, float noiseStrength = 10f, float baseHeight = 0f)
     {
         var layer = new HeightmapLayer
         {
@@ -54,11 +62,12 @@ public unsafe struct PerlinNoiseHeightmapLayer : IHeightmapLayer
 
         layer.properties[0] = noiseScale;
         layer.properties[1] = noiseStrength;
+        layer.properties[2] = baseHeight;
 
         return layer;
     }
 
-    public static string[] Fields() => new[] { "Noise Scale", "Noise Strength" };
+    public static string[] Fields() => new[] { "Noise Scale", "Noise Strength", "Base Height" };
     public static string[] InputPorts() => Array.Empty<string>();
     public static string[] OutputPorts() => new[] { "Out" };
 }
